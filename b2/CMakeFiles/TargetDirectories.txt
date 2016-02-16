@@ -1,0 +1,5 @@
+/home/bryce/Documents/research/code/b2/CMU462/deps/glfw/CMakeFiles/uninstall.dir
+/home/bryce/Documents/research/code/b2/CMU462/src/CMakeFiles/CMU462.dir
+/home/bryce/Documents/research/code/b2/src/CMakeFiles/meshedit.dir
+/home/bryce/Documents/research/code/b2/CMU462/deps/glew/CMakeFiles/glew.dir
+/home/bryce/Documents/research/code/b2/CMU462/deps/glfw/src/CMakeFiles/glfw.dir

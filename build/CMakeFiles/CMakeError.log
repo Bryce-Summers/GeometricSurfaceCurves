@@ -1,0 +1,79 @@
+Determining if the pthread_create exist failed with the following output:
+Change Dir: /home/bryce/Documents/research/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTryCompileExec2848863843/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec2848863843.dir/build.make CMakeFiles/cmTryCompileExec2848863843.dir/build
+make[1]: Entering directory '/home/bryce/Documents/research/build/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/bryce/Documents/research/build/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec2848863843.dir/CheckSymbolExists.c.o
+/usr/bin/cc    -o CMakeFiles/cmTryCompileExec2848863843.dir/CheckSymbolExists.c.o   -c /home/bryce/Documents/research/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+Linking C executable cmTryCompileExec2848863843
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec2848863843.dir/link.txt --verbose=1
+/usr/bin/cc       CMakeFiles/cmTryCompileExec2848863843.dir/CheckSymbolExists.c.o  -o cmTryCompileExec2848863843 -rdynamic 
+CMakeFiles/cmTryCompileExec2848863843.dir/CheckSymbolExists.c.o: In function `main':
+CheckSymbolExists.c:(.text+0x16): undefined reference to `pthread_create'
+CMakeFiles/cmTryCompileExec2848863843.dir/build.make:88: recipe for target 'cmTryCompileExec2848863843' failed
+make[1]: Leaving directory '/home/bryce/Documents/research/build/CMakeFiles/CMakeTmp'
+Makefile:117: recipe for target 'cmTryCompileExec2848863843/fast' failed
+collect2: error: ld returned 1 exit status
+make[1]: *** [cmTryCompileExec2848863843] Error 1
+make: *** [cmTryCompileExec2848863843/fast] Error 2
+
+File /home/bryce/Documents/research/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <pthread.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef pthread_create
+  return ((int*)(&pthread_create))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /home/bryce/Documents/research/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTryCompileExec2484653716/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec2484653716.dir/build.make CMakeFiles/cmTryCompileExec2484653716.dir/build
+make[1]: Entering directory '/home/bryce/Documents/research/build/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/bryce/Documents/research/build/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec2484653716.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTryCompileExec2484653716.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-3.2/Modules/CheckFunctionExists.c
+Linking C executable cmTryCompileExec2484653716
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec2484653716.dir/link.txt --verbose=1
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=pthread_create    CMakeFiles/cmTryCompileExec2484653716.dir/CheckFunctionExists.c.o  -o cmTryCompileExec2484653716 -rdynamic -lpthreads 
+/usr/bin/ld: cannot find -lpthreads
+CMakeFiles/cmTryCompileExec2484653716.dir/build.make:88: recipe for target 'cmTryCompileExec2484653716' failed
+make[1]: Leaving directory '/home/bryce/Documents/research/build/CMakeFiles/CMakeTmp'
+Makefile:117: recipe for target 'cmTryCompileExec2484653716/fast' failed
+collect2: error: ld returned 1 exit status
+make[1]: *** [cmTryCompileExec2484653716] Error 1
+make: *** [cmTryCompileExec2484653716/fast] Error 2
+
+
+Determining if the function glXGetProcAddressEXT exists failed with the following output:
+Change Dir: /home/bryce/Documents/research/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTryCompileExec1632850254/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec1632850254.dir/build.make CMakeFiles/cmTryCompileExec1632850254.dir/build
+make[1]: Entering directory '/home/bryce/Documents/research/build/CMakeFiles/CMakeTmp'
+/usr/bin/cmake -E cmake_progress_report /home/bryce/Documents/research/build/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building C object CMakeFiles/cmTryCompileExec1632850254.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=glXGetProcAddressEXT   -o CMakeFiles/cmTryCompileExec1632850254.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-3.2/Modules/CheckFunctionExists.c
+Linking C executable cmTryCompileExec1632850254
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTryCompileExec1632850254.dir/link.txt --verbose=1
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=glXGetProcAddressEXT    CMakeFiles/cmTryCompileExec1632850254.dir/CheckFunctionExists.c.o  -o cmTryCompileExec1632850254 -rdynamic -lGL 
+CMakeFiles/cmTryCompileExec1632850254.dir/CheckFunctionExists.c.o: In function `main':
+CheckFunctionExists.c:(.text+0x15): undefined reference to `glXGetProcAddressEXT'
+CMakeFiles/cmTryCompileExec1632850254.dir/build.make:89: recipe for target 'cmTryCompileExec1632850254' failed
+make[1]: Leaving directory '/home/bryce/Documents/research/build/CMakeFiles/CMakeTmp'
+Makefile:117: recipe for target 'cmTryCompileExec1632850254/fast' failed
+collect2: error: ld returned 1 exit status
+make[1]: *** [cmTryCompileExec1632850254] Error 1
+make: *** [cmTryCompileExec1632850254/fast] Error 2
+
+
