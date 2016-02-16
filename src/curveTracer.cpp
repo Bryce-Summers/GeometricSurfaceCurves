@@ -30,8 +30,8 @@ namespace CMU462
     {
       if(iter -> has_crossing_point == false)
       {
-	Critical_point & cp1 = iter -> p1;
-	Critical_point & cp2 = iter -> p2;
+	Critical_Point & cp1 = iter -> p1;
+	Critical_Point & cp2 = iter -> p2;
 
 	// Union these critical point sets.
 	// The entire set will be above or below the level set.
@@ -49,13 +49,13 @@ namespace CMU462
     {
       if(iter -> has_crossing_point == true)
       {
-	Critical_point & cp1 = iter -> p1;
-	Critical_point & cp2 = iter -> p2;
+	Critical_Point & cp1 = iter -> p1;
+	Critical_Point & cp2 = iter -> p2;
 
 	if(!UF.connected(cp1.index, cp2.index))
 	{
 	  // Push
-	  cp_all.push_back(iter-> level_set_crossing_point);
+	  silhouette_points.push_back(iter-> level_set_crossing_point);
 
 	  // Union these critical point sets.
 	  UF.op_union(cp1.index, cp2.index);
@@ -114,36 +114,40 @@ namespace CMU462
   }
 
   // REQUIRES: curve should be empty coming in.
+  // Returns false if no ending critical point was found.
   bool Curve_Silhouette::trace_gradient(
 		Critical_Point cp,    // Starting point.
 		double du, double dv, // Direction.
-		PointCurve & curve,   // OUT: Output point curve that is populated.
+		PointCurve & curve    // OUT: Output point curve that is populated.
 					)
   {
+
+    // Compute the canonical control points for the initial face.
+    FaceIter current_face = cp.face;
+    PatchDrawer patcher;
+    std::vector<Vector3D> control_points;
+    patcher.computeControlPoints(current_face, control_points);
+
+    
     // Compute the a scalar 'dir' that represents whether we wish to go up or down.
     // The gradient will be multiplied by -1 if we wish to head towards a minnimum.
-    Vector2D grad = grad_f(cp.u + du, cp.v + dv);
+    Vector2D grad = grad_f(control_points, cp.u + du, cp.v + dv);
     double   dot  = grad.x*du + grad.y*dv; // Positive dot product then <du,dv>
     double   dir  = dot > 0 ? 1.0 : -1.0;  // heads uphill.   
 
     // The curve starts at the original given critical point.
-    curve.cp1 = cp;
+    curve.p1 = cp;
     curve.addPoint(cp.location);
 
     // Now follow the gradient until we find a max/min.
     // Add these points to the curves as we go along.
     // We transition from one bicubic patch to another
     // when we go out of [0,1] x [0,1] bounds.
-    FaceIter current_face = cp.face;
     double u = cp.u;
     double v = cp.v;
     double u_new = u + du;
     double v_new = v + dv;
-
-    PatchDrawer patcher;
-    std::vector<Vector3D> control_points;
-    patcher.computeControlPoints(current_face, control_points);
-    
+  
     while( abs(u_new - u) > TOLERANCE || abs(v_new - v) > TOLERANCE )
     {
       u = u_new;
@@ -154,7 +158,12 @@ namespace CMU462
       // Perform transitions between bicubic patches.
       // There may be up to two transitions if we have run off the corner.
       bool transition = false;
-      while(transitionIfNeccessary(FaceIter & current_face, double & u, double & v))
+
+
+      // FIXME: Check for boundaries. If they occur, then the gradient curve needs to immediatly end, but if they are present then the function is not morse...
+      
+      // NOTE: may mutate current_face, u, and v.
+      while(transitionIfNeccessary(current_face, u, v))
       {
 	transition = true;
       }
@@ -164,24 +173,25 @@ namespace CMU462
       if(transition)
       {
 	control_points.clear();
-	patcher.computeContolPoints(current_face, control_points());
+	patcher.computeControlPoints(current_face, control_points);
       }
 
-      grad = grad_f(u, v);
+      grad = grad_f(control_points, u, v);
       
       u_new = u + GRAD_COEF*grad.x;
       v_new = v + GRAD_COEF*grad.y;
     }
 
-    if(!face.has_critical_point)
+    if(!current_face->has_critical_point)
     {
       cerr << "ERROR: CurveTracer: Function converged," <<
 	"but no critical point was previously stored on this face." << endl;
-      return;
+      return false;
     }
-    
-    curve.cp2 = face.critical_point;
-    curve.addPoint(curve.cp2.location);
+
+    curve.p2 = current_face->critical_point;
+    curve.addPoint(curve.p2.location);
+    return true;
   }
 
   bool Curve_Silhouette::transitionIfNeccessary(FaceIter & current_face,
@@ -224,7 +234,7 @@ namespace CMU462
     // NOTE: We are making a major assumption that we will only be
     //       performing 1 transformation at a time.
     
-    EdgeIter e0, e1, e2, e3;
+    HalfedgeIter e0, e1, e2, e3;
     e0 = current_face -> halfedge(); // Top.
     e1 = e0 -> next(); // Right.
     e2 = e1 -> next(); // Bottom.
@@ -237,25 +247,25 @@ namespace CMU462
     // Compute the transition variables and apply local transformation.
     if(v < 0.0)
     {
-      twin = e1 -> twin();
+      twin = e0 -> twin();
       o1 = 0;
       v = v + 1.0;
     }
     else if(u > 1.0)
     {
-      twin = e2 -> twin();
+      twin = e1 -> twin();
       o1   = 1;
       u    = u - 1.0;
     }
     else if(v > 1.0)
     {
-      twin = e3 -> twin();
+      twin = e2 -> twin();
       o1   = 2;
       v    = v - 1.0;
     }
     else if(u < 0.0)
     {
-      twin = e4 -> twin();
+      twin = e3 -> twin();
       o1   = 3;
       u    = u + 1.0;
     }
@@ -357,7 +367,7 @@ namespace CMU462
 	  }
 	  
 	  // Record all points in the larger output array.
-	  if(all_point != NULL)
+	  if(all_points != NULL)
 	  {
 	    all_points -> push_back(cp);
 	  }

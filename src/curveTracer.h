@@ -12,6 +12,8 @@
 
 #include "critical_points.h"
 
+#include "UnionFind/UF_Serial.h"
+
 /*
  * Contour Tracer,
  * Written by Bryce Summers on 1/29/2016. (Started)
@@ -110,7 +112,7 @@ namespace CMU462
     // be called twice when u < 0 and v < 0.
     bool transitionIfNeccessary(FaceIter & current_face, double & u, double & v);
 
-    inline int determineOrientation(FaceIter face, HalfedgeIter edge);
+    inline int determineOrientation(HalfedgeIter edge);
     
     // Traces a curve from the given critical point in the given direction to a MIN or MAX critical point.
     // If the initial directional gradient is positive, then this function will trace a postive  going gradient.
