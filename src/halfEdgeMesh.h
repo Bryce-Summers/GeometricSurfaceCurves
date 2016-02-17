@@ -149,7 +149,7 @@
 #include "CMU462/CMU462.h" // Standard 462 Vectors, etc.
 
 #include "mesh.h"
-#include "critical_points.h" // Critical Points.
+//#include "critical_points.h" // Critical Points.
 
 using namespace std;
 using namespace CMU462;
@@ -171,6 +171,21 @@ namespace CMU462
    class Face;
    class Halfedge;
 
+   enum Critical_Point_Type{MIN, MAX, SADDLE, ORIGINATION};
+  
+   class Critical_Point
+   {
+   public:
+     Vector3D location; // This Critical Point's location in 3D space.
+     list<Face>::iterator face;// The face defining the bicubic patch that this
+                               // critical point resides on.
+     double u, v;            // the coordinates of this cp on the bicubic patch.
+     Critical_Point_Type type; // MIN, MAX, or SADDLE.
+     int index; // Every critical point is given a unique index between
+                // [0, |critical points|]
+     double f_val; // The value of the function at this critical point.
+   };
+   
    /*
     * Rather than using raw pointers to mesh elements, we store references
     * as STL::iterators---for convenience, we give shorter names to these

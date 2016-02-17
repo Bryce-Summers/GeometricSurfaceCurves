@@ -14,22 +14,10 @@ using namespace std;
 namespace CMU462
 {
 
-  class Face;
+  // The headers have been temporarily moved to halfEdgeMesh.h due to circular
+  // dependancies. I should find a better solution to this problem.
+  // Sincerely, Bryce Summers
   
-  enum Critical_Point_Type{MIN, MAX, SADDLE, ORIGINATION};
-  
-  class Critical_Point
-  {
-  public:
-    Vector3D location; // This Critical Point's location in 3D space.
-    list<Face>::iterator face;     // The face defining the bicubic patch that this
-                       // critical point resides on.
-    double u, v;       // the coordinates of this cp on the bicubic patch.
-    Critical_Point_Type type; // MIN, MAX, or SADDLE.
-    int index; // Every critical point is given a unique index between [0, |critical points|]
-    double f_val; // The value of the function at this critical point.
-  };
-
 }
 
 #endif // CRITICAL_POINT_H

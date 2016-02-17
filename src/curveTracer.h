@@ -32,6 +32,8 @@ using namespace std;
 namespace CMU462
 {
 
+  
+  
   // FIXME : Evenetually we are going to abstract this to a subclass.
   // We should make a base class that has all of the high level algorithms for tracing gradients and paths,
   // given a specification for the function and its 1st and 2nd order derivatives in u and v.
@@ -48,7 +50,10 @@ namespace CMU462
     const int GRAD_SQR_COEF = 10000;
 
     // This is the coeficient for tracing along the gradient.
-    const int GRAD_COEF = 10000;
+    const int GRAD_COEF = 100;
+
+    // How much to go in the perpendicular gradient direction.
+    const double GRAD_PERP_DIST = .1;
     
     // The viewing eye ray.
     Vector3D E;
@@ -56,6 +61,15 @@ namespace CMU462
     Curve_Silhouette(Vector3D e){this->E = e;};
     ~Curve_Silhouette(){}
 
+    // Given a list of silhouette point locations,
+    // Creates a Point curve associated with each one of the silhouette points.
+    // to edges.
+    // REQUIRES: Assumes for now that the mesh is closed and therefore all 0
+    //           level sets are closed.
+    // REQUIREs: the critical points must be of the origination type.
+    //           They also ought to be close to a 0 location for relevance.
+    void trace_zero_level_sets(std::vector<Critical_Point> & silhouette_points,
+			       std::vector<PointCurve> & edges);
 
     // Finds exactly one point on each silhouette curve.
     // num_critical_points -> IN
@@ -100,6 +114,13 @@ namespace CMU462
 
   private:
 
+    // Performs as many transitions as are necessary and updates all of the
+    // input values according to the ending location on the geometric surface.
+    void performTransitions(FaceIter & current_face,
+			    double & u,
+			    double & v,
+			    std::vector<Vector3D> & control_points);
+    
     // Checks the given u and v coordinates for being out of the [0, 1) x [0, 1)
     // If they are then it transitions to the correct new face and
     // localizes the u and v value to the new face.
@@ -113,7 +134,27 @@ namespace CMU462
     bool transitionIfNeccessary(FaceIter & current_face, double & u, double & v);
 
     inline int determineOrientation(HalfedgeIter edge);
-    
+
+
+    // Returns false if it encounters a boundary.
+    // Follows the 0 set perpendicular to the gradient in a loop.
+    bool trace_zero_curve(Critical_Point start, PointCurve & curve);
+
+    // -- Moves the given tracing states down to the nearest point at the
+    //    Desired Level.
+    void moveOntoLevel(double & u, double & v,
+		       FaceIter & current_face,
+		       std::vector<Vector3D> & control_points,
+		       double level = 0.0);
+
+    // Moves the given tracing states perpendicular to the gradient
+    // in a consistent direction, (always lefthand or righthand rule).
+    void movePerpGrad(double & u, double & v,
+		      FaceIter & current_face,
+		      std::vector<Vector3D> & control_points);
+
+
+
     // Traces a curve from the given critical point in the given direction to a MIN or MAX critical point.
     // If the initial directional gradient is positive, then this function will trace a postive  going gradient.
     // If the initial directional gradient is negative, then this function will trace a negative going gradient.
@@ -167,8 +208,12 @@ namespace CMU462
 
     // The gradient of the magnitude of the gradient of F.
     // Using this result as a descent direction should yield all critical points.
-    Vector2D grad_f_sqr(std::vector<Vector3D> & control_points,
+    Vector2D grad_mag_f(std::vector<Vector3D> & control_points,
 			double u, double v);
+
+    // The gradient of the sqr of f, minnimums coorespond to 0 points.
+    Vector2D grad_f_2(std::vector<Vector3D> & control_points,
+		      double u, double v);
   };
   
 }

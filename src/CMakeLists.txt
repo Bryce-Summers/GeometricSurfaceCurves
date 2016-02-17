@@ -13,7 +13,7 @@ set(COLLADA_VIEWER_SOURCE
     collada.cpp
     #critical_points.cpp
     halfEdgeMesh.cpp
-    #pointCurve.cpp
+    pointCurve.cpp
     meshResampler.cpp
     patchDrawer.cpp
     curveTracer.cpp

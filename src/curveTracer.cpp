@@ -13,6 +13,108 @@
 namespace CMU462
 {
 
+  void Curve_Silhouette::trace_zero_level_sets(
+       std::vector<Critical_Point> & silhouette_points,
+       std::vector<PointCurve> & edges)
+  {
+    for(auto iter = silhouette_points.begin();
+	iter != silhouette_points.end();
+	++iter)
+    {
+      // -- IGNORE Critical points that are not of the origination type.
+      if(iter->type != ORIGINATION)
+      {
+	  continue;
+      }
+      edges.push_back(PointCurve());
+
+      // Create a reference to the allocated curve object.
+      PointCurve & curve = edges[edges.size() - 1];
+      
+      trace_zero_curve(*iter, curve);
+    }
+    
+  }
+
+  // This is very similar to the gradient tracer.
+  // It traces the 0 level set perpendicular to the gradient.
+  bool Curve_Silhouette::trace_zero_curve(Critical_Point start, PointCurve & curve)
+  {
+    // Compute the canonical control points for the initial face.
+    FaceIter current_face = start.face;
+    PatchDrawer patcher;
+    std::vector<Vector3D> control_points;
+    patcher.computeControlPoints(current_face, control_points);
+    
+    // Compute the a scalar 'dir' that represents whether we wish to go up or down.
+    // The gradient will be multiplied by -1 if we wish to head towards a minnimum.
+    Vector2D grad = grad_f(control_points, start.u, start.v);
+    
+
+    // The curve starts and ends at the given start point.
+    curve.p1 = start;
+    curve.p2 = start;
+
+    // We will now trace the gradient in a circle.
+    double u = start.u;
+    double v = start.v;
+
+    // Make sure we start on the silhouette curve.
+    moveOntoLevel(u, v, current_face, control_points);
+
+    // Store the locations of the starting point.
+    double u_original = u;
+    double v_original = v;
+
+    curve.addPoint(P(control_points, u, v));
+    
+    movePerpGrad (u, v, current_face, control_points);
+    moveOntoLevel(u, v, current_face, control_points);
+    
+    while(abs(u - u_original) + abs(v - v_original) > GRAD_PERP_DIST)
+    {
+      curve.addPoint(P(control_points, u, v));
+
+      movePerpGrad (u, v, current_face, control_points);
+      moveOntoLevel(u, v, current_face, control_points);
+    }
+
+    return true;
+  }
+
+  void Curve_Silhouette::moveOntoLevel(double & u, double & v,
+				       FaceIter & current_face,
+				       std::vector<Vector3D> & control_points,
+				       double level)
+  {
+
+    while(F(control_points, u, v) > TOLERANCE)
+    {
+      Vector2D grad = grad_f_2(control_points, u, v);
+
+      // Walk downhill. (negative uphill.)
+      u -= GRAD_SQR_COEF*grad.x;
+      v -= GRAD_SQR_COEF*grad.y;
+
+      performTransitions(current_face, u, v, control_points);
+    }
+
+  }
+
+  void Curve_Silhouette::movePerpGrad(double & u, double & v,
+				      FaceIter & current_face,
+				      std::vector<Vector3D> & control_points)
+  {
+
+    Vector2D grad = grad_f(control_points, u, v);
+
+    grad = grad.unit();
+    
+    u += -GRAD_PERP_DIST*grad.y;
+    v +=  GRAD_PERP_DIST*grad.x;
+    
+    performTransitions(current_face, u, v, control_points);
+  }
 
   void Curve_Silhouette::find_unique_silhouette_points(int num_critical_points,
 					  std::vector<PointCurve> & edges,
@@ -94,6 +196,7 @@ namespace CMU462
     {
       Critical_Point & saddle = *iter;
       double amount = CURVE_TRACING_STEP; // FIXME, choose a more appropiate value.
+      cout << "Tracing a Gradient" << endl;
       
       // ASSUMPTION: if we choose 2 perpendicular directions,
       //             then they will go in opposite gradient directions.
@@ -147,36 +250,54 @@ namespace CMU462
     double v = cp.v;
     double u_new = u + du;
     double v_new = v + dv;
-  
+
+    // Silhouette curve function value
+    double f = F(control_points, u, v);
+    // Curve heading in the direction of a Silhouette.
+    // aka heading towards 0 level set.
+    bool check_crossing = f*dir < 0;
+    
     while( abs(u_new - u) > TOLERANCE || abs(v_new - v) > TOLERANCE )
-    {
+    {      
       u = u_new;
       v = v_new;
 
-      curve.addPoint(P(control_points, u, v));
+      Vector3D location = P(control_points, u, v);
+      curve.addPoint(location);
 
       // Perform transitions between bicubic patches.
       // There may be up to two transitions if we have run off the corner.
       bool transition = false;
 
-
-      // FIXME: Check for boundaries. If they occur, then the gradient curve needs to immediatly end, but if they are present then the function is not morse...
+      // --  Handle the logic of switching between bicubic patches.
+      performTransitions(current_face, u, v, control_points);
       
-      // NOTE: may mutate current_face, u, and v.
-      while(transitionIfNeccessary(current_face, u, v))
+
+      // Add the silhouette crossing point to the curve if found.
+      // crossing found if the curve is no longer headed towards the 0 level set.
+      if(check_crossing && F(control_points, u, v)*dir > 0)
       {
-	transition = true;
+	cout << "Adding a crossing Point" << f << endl;
+	
+	Critical_Point crossing;
+	crossing.location = location;
+	crossing.u = u;
+	crossing.v = v;
+	crossing.type = ORIGINATION;
+	crossing.index = -1;// FIXME Use something useful if needed.
+	crossing.face = current_face;
+	crossing.f_val = 0; // Pretend, close to 0.
+	
+	curve.level_set_crossing_point = crossing;
+	curve.has_crossing_point = true;
+
+	// Don't check anymore, because all integral curves are monotonic
+	// increasing / decreasing. There will only be 1.
+	check_crossing = false;
       }
 
-      // If a transition occured, then we need to recalculate the control points.
-      // FIXME : It might be a good idea to store critical points on bicubic patches.
-      if(transition)
-      {
-	control_points.clear();
-	patcher.computeControlPoints(current_face, control_points);
-      }
-
-      grad = grad_f(control_points, u, v);
+      
+      grad = dir*grad_f(control_points, u, v);
       
       u_new = u + GRAD_COEF*grad.x;
       v_new = v + GRAD_COEF*grad.y;
@@ -194,6 +315,31 @@ namespace CMU462
     return true;
   }
 
+  void Curve_Silhouette::performTransitions(
+       FaceIter & current_face,
+       double & u,
+       double & v,
+       std::vector<Vector3D> & control_points)
+  {
+    bool transition = false;
+    
+    // NOTE: may mutate current_face, u, and v.
+    
+    while(transitionIfNeccessary(current_face, u, v))
+    {
+      transition = true;
+    }
+
+    // If a transition occured, then we need to recalculate the control points.
+    // FIXME : It might be a good idea to store critical points on bicubic patches.
+    if(transition)
+    {
+      control_points.clear();
+      PatchDrawer patcher;
+      patcher.computeControlPoints(current_face, control_points);
+    }
+  }
+  
   bool Curve_Silhouette::transitionIfNeccessary(FaceIter & current_face,
 						double & u,
 						double & v)
@@ -346,7 +492,9 @@ namespace CMU462
 
       // Right now we just start at each corner of the patch and see if they find a
       // critical point inside of the patch.
+      bool found_point = false;
       for(int u = 0; u <= 1; u++)
+      {
       for(int v = 0; v <= 1; v++)
       {
 	// Find Critical Points..
@@ -378,11 +526,15 @@ namespace CMU462
 
 	  // FIXME : We are currently only looking for one critical point per patch.
 	  // This may not be an assumption that holds water.
+	  found_point = true;
 	  break;
 	}
 
 	// Mark this face as not having a valid critical point thus far.
 	f -> has_critical_point = false;
+      }
+      // Double break;
+      if(found_point){break;}
       }      
     }
   }
@@ -398,7 +550,7 @@ namespace CMU462
     Vector2D grad;
     do
     {
-      grad = GRAD_SQR_COEF*grad_f_sqr(control_points, u, v);
+      grad = GRAD_SQR_COEF*grad_mag_f(control_points, u, v);
 
       u -= grad.x;
       v -= grad.y;
@@ -582,8 +734,8 @@ namespace CMU462
   }
 
   // The gradient of the magnitude of the gradient of f.
-  Vector2D Curve_Silhouette::grad_f_sqr(std::vector<Vector3D> & control_points,
-			     double u, double v)
+  Vector2D Curve_Silhouette::grad_mag_f(std::vector<Vector3D> & control_points,
+					double u, double v)
   {
     double f_u  = F_u(control_points, u, v);
     double f_v  = F_v(control_points, u, v);
@@ -600,6 +752,19 @@ namespace CMU462
 		    2*f_u*f_uu + 2*f_v*f_uv,
 		    2*f_u*f_uv + 2*f_v*f_vv
 		   );
+  }
+
+  Vector2D Curve_Silhouette::grad_f_2(std::vector<Vector3D> & control_points,
+				      double u, double v)
+  {
+    double f    = F_u(control_points, u, v);
+    double f_u  = F_u(control_points, u, v);
+    double f_v  = F_v(control_points, u, v);
+
+    return Vector2D(
+		    2*f*f_u,
+		    2*f*f_v
+		    );
   }
   
 }

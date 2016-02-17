@@ -298,6 +298,11 @@ class MeshEdit : public Renderer {
   DrawStyle selectStyle;  // style for currently selected element
   Color text_color;
 
+
+  
+
+
+  
   // -- Mouse input.
   // -- User Input variables.
   bool mouse_rotate;
@@ -365,7 +370,10 @@ class MeshEdit : public Renderer {
   // -- Curve Finding Operations.
   void find_silhouette_curves();
   std::vector<Critical_Point> critical_points;
+  std::vector<PointCurve> morse_smale_edges;
   void drawCriticalPoints(std::vector<Critical_Point> & critical_points);
+  void drawMSEdges(std::vector<PointCurve> & morse_smale_edges);
+  
   Vector3D eye_direction;// Direction the camera is currently pointing.
 
   
@@ -383,6 +391,9 @@ class MeshEdit : public Renderer {
   vector<int> messages;
 
   // -- Debugging strings.
+
+  bool show_control_edges;
+  
   bool showHUD;
   void drawHUD();
   inline void drawString(float x, float y, string str, size_t size, Color c);

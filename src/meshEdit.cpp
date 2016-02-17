@@ -27,6 +27,7 @@ namespace CMU462 {
       mouse_rotate = false;
 
       showHUD = true;
+      show_control_edges = true;
       camera_angles = Vector3D(0.0, 0.0, 0.0);
 
       // 3D applications really like enabling the depth test,
@@ -262,6 +263,9 @@ namespace CMU462 {
          case 'T':
             selectTwinHalfedge();
             break;
+         case 'E':// Toggle displaying control mesh edges or not.
+         case 'e':
+	   show_control_edges = !show_control_edges;
          default:
             break;
       }
@@ -930,6 +934,11 @@ namespace CMU462 {
    // -- Geometric Operations
    void MeshEdit::mesh_up_sample()
    {
+     // REMOVE ME / FIXME
+     return;
+
+
+     
       HalfedgeMesh* mesh;
 
       // If an element is selected, resample the mesh containing that
@@ -1215,16 +1224,20 @@ namespace CMU462 {
    void MeshEdit::renderMesh( HalfedgeMesh& mesh )
    {
       glEnable(GL_LIGHTING);
-      drawFaces( mesh );
+      //drawFaces( mesh );
 
       // Edges are drawn with flat shading.
       glDisable(GL_LIGHTING);
-      drawEdges( mesh );
+
+      if(show_control_edges)
+	drawEdges( mesh );
 
       drawVertices( mesh );
       drawHalfedges( mesh );
 
+      // -- Draw Silhouette Curve computation elements.
       drawCriticalPoints(critical_points);
+      drawMSEdges(morse_smale_edges);
    }
 
    // Sets the current OpenGL color/style of a given mesh element, according to which elements are currently selected and hovered.
@@ -1395,7 +1408,9 @@ namespace CMU462 {
 	   break;
 	 case MAX: glColor3f(1.0, 0.0, 0.0);
 	   break;
-  	 case SADDLE: glColor3f(0.0, 1.0, 0.0);
+  	 case SADDLE: glColor3f(0.0, 1.0, 0.0);//green
+	   break;
+	 case ORIGINATION: glColor3f(1.0, 1.0, 1.0);
 	   break;
 	 }
 
@@ -1408,52 +1423,64 @@ namespace CMU462 {
      //glEnable( GL_DEPTH_TEST );
    }
 
-   void MeshNode::getBounds( Vector3D& low, Vector3D& high )
-   {
-      double maxValue = numeric_limits<double>::max();
+  void MeshEdit::drawMSEdges(std::vector<PointCurve> & ms_edges)
+  {
+    glColor3f(0.0, 1.0, 0.0);//green
 
-      low.x = maxValue; high.x = -maxValue;
-      low.y = maxValue; high.y = -maxValue;
-      low.z = maxValue; high.z = -maxValue;
+    // -- Draw all each one of the morse smale edges.
+    for(auto iter = ms_edges.begin(); iter != ms_edges.end(); ++iter)
+    {
+      iter -> draw();
+    }
+  }
+  
 
-      for( VertexIter v = mesh.verticesBegin(); v != mesh.verticesEnd(); v++ )
-      {
-         Vector3D& p = v->position;
+  void MeshNode::getBounds( Vector3D& low, Vector3D& high )
+  {
+    double maxValue = numeric_limits<double>::max();
 
-         low.x = min( low.x, p.x );
-         low.y = min( low.y, p.y );
-         low.z = min( low.z, p.z );
+    low.x = maxValue; high.x = -maxValue;
+    low.y = maxValue; high.y = -maxValue;
+    low.z = maxValue; high.z = -maxValue;
 
-         high.x = max( high.x, p.x );
-         high.y = max( high.y, p.y );
-         high.z = max( high.z, p.z );
-      }
-   }
+    for( VertexIter v = mesh.verticesBegin(); v != mesh.verticesEnd(); v++ )
+    {
+	Vector3D& p = v->position;
 
-   // Centroid / weighted average point.
-   void MeshNode::getCentroid( Vector3D& centroid )
-   {
-      centroid = Vector3D( 0., 0., 0. );
+	low.x = min( low.x, p.x );
+	low.y = min( low.y, p.y );
+	low.z = min( low.z, p.z );
 
-      for( VertexIter v = mesh.verticesBegin(); v != mesh.verticesEnd(); v++ )
-      {
-         centroid += v->position;
-      }
+	high.x = max( high.x, p.x );
+	high.y = max( high.y, p.y );
+	high.z = max( high.z, p.z );
+    }
+  }
 
-      centroid /= (double) mesh.nVertices();
-   }
+  // Centroid / weighted average point.
+  void MeshNode::getCentroid( Vector3D& centroid )
+  {
+    centroid = Vector3D( 0., 0., 0. );
 
-   /*
-    * populates the given feature structure with data cooresponding to
-    * mesh feature on the face cooresponding to the given lookup structure
-    * and bary_centric_coordinates.
-    * OUT : feature.
-    * IN : Lookup location : Which triangular face.
-    * barycentric_coordates : Where on the face is the mouse pointing to.
-    *  - Determines whether the user wants the face, an edge, or a vertex.
-    *  - Vector(A%, B%, C%), where ABC are in index order after the lookup location.
-    */
-   void MeshNode::fillFeatureStructure(
+    for( VertexIter v = mesh.verticesBegin(); v != mesh.verticesEnd(); v++ )
+    {
+      centroid += v->position;
+    }
+
+    centroid /= (double) mesh.nVertices();
+  }
+
+  /*
+   * populates the given feature structure with data cooresponding to
+   * mesh feature on the face cooresponding to the given lookup structure
+   * and bary_centric_coordinates.
+   * OUT : feature.
+   * IN : Lookup location : Which triangular face.
+   * barycentric_coordates : Where on the face is the mouse pointing to.
+   *  - Determines whether the user wants the face, an edge, or a vertex.
+   *  - Vector(A%, B%, C%), where ABC are in index order after the lookup location.
+   */
+  void MeshNode::fillFeatureStructure(
          // OUTPUT:
          MeshFeature & feature,
 
@@ -1551,6 +1578,7 @@ namespace CMU462 {
    {
       Curve_Silhouette curve_tracer(eye_direction);
       critical_points.clear();
+      morse_smale_edges.clear();
 
       HalfedgeMesh* mesh;
       // If an element is selected, resample the mesh containing that
@@ -1564,7 +1592,18 @@ namespace CMU462 {
          mesh = &( meshNodes.begin()->mesh );
       }
 
-      curve_tracer.findCriticalPoints(*mesh, critical_points);
+      //curve_tracer.findCriticalPoints(*mesh, critical_points);
+
+      // Find the Entire Morse Smale Complex.
+      curve_tracer.morse_smale_complex(*mesh, critical_points, morse_smale_edges);
+      curve_tracer.find_unique_silhouette_points(
+		   critical_points.size(),
+		   morse_smale_edges,
+		   critical_points);
+
+      curve_tracer.trace_zero_level_sets(critical_points, morse_smale_edges);
+      
+      //morse_smale_edges.clear();
    }
 
 } // namespace CMU462
