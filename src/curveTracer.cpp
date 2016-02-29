@@ -42,7 +42,6 @@ namespace CMU462
   {
     // Compute the canonical control points for the initial face.
     FaceIter current_face = start.face;
-    PatchDrawer patcher;
     std::vector<Vector3D> control_points;
     patcher.computeControlPoints(current_face, control_points);
     
@@ -99,6 +98,30 @@ namespace CMU462
       performTransitions(current_face, u, v, control_points);
     }
 
+  }
+
+  void Curve_Silhouette::performTransitions(
+       FaceIter & current_face,
+       double & u,
+       double & v,
+       std::vector<Vector3D> & control_points)
+  {
+    bool transition = false;
+    
+    // NOTE: may mutate current_face, u, and v.
+    
+    while(transitionIfNeccessary(current_face, u, v))
+    {
+      transition = true;
+    }
+
+    // If a transition occured, then we need to recalculate the control points.
+    // FIXME : It might be a good idea to store critical points on bicubic patches.
+    if(transition)
+    {
+      control_points.clear();
+      patcher.computeControlPoints(current_face, control_points);
+    }
   }
 
   void Curve_Silhouette::movePerpGrad(double & u, double & v,
@@ -227,7 +250,6 @@ namespace CMU462
 
     // Compute the canonical control points for the initial face.
     FaceIter current_face = cp.face;
-    PatchDrawer patcher;
     std::vector<Vector3D> control_points;
     patcher.computeControlPoints(current_face, control_points);
 
@@ -315,158 +337,6 @@ namespace CMU462
     return true;
   }
 
-  void Curve_Silhouette::performTransitions(
-       FaceIter & current_face,
-       double & u,
-       double & v,
-       std::vector<Vector3D> & control_points)
-  {
-    bool transition = false;
-    
-    // NOTE: may mutate current_face, u, and v.
-    
-    while(transitionIfNeccessary(current_face, u, v))
-    {
-      transition = true;
-    }
-
-    // If a transition occured, then we need to recalculate the control points.
-    // FIXME : It might be a good idea to store critical points on bicubic patches.
-    if(transition)
-    {
-      control_points.clear();
-      PatchDrawer patcher;
-      patcher.computeControlPoints(current_face, control_points);
-    }
-  }
-  
-  bool Curve_Silhouette::transitionIfNeccessary(FaceIter & current_face,
-						double & u,
-						double & v)
-  {
-    /*       0                 0      
-     *  .--------->       .---------> 
-     * /|\   .    |      /|\   .    | 
-     *  |   /|\   |       |   /|\   | 
-     *3 |    |    | 1   3 |    |    | 1
-     *  |    |    | o1  o2|    |    |
-     *  |        \|/      |        \|/
-     *  <---------.       <---------.
-     *       2                 2
-     *
-     * Edge 1 in the starting face goes to edge 3 in the twin face.
-     * orientation1 (o1) is therefore 1, and orientation2 (o2) is therefore 3.
-     *
-     * We can determine how many clockwise turns are needed to make the coordinates 
-     * consistent after the transformation as follows:
-     *
-     * o2 == (o1 + 2) % 4 --> 0 clockwise turns.
-     * o2 == (o1 + 3) % 4 --> 1 clockwise turns.
-     * o2 == (o1 + 4) % 4 --> 2 clockwise turns.
-     * o2 == (o1 + 5) % 4 --> 3 clockwise turns.
-     *
-     * Here are the transformations for u and v after a number of turns.
-     * (u,v) --> (u - .5, v - .5) [Translation centers coordinate system around origin.]
-     *
-     * [cos(90) -sin(90) ]   x number of clockwise turns.
-     * [sin(90)  cos(90) ]
-     *
-     * [   0       -1      ] [u] = [-v ]    u' = -v;
-     * [   1        0      ] [v] = [ u ]    v' =  u;
-     *
-     * (u, v) --> (u + .5, v + .5) [Translate the cordinate back into [0, 1) x [0, 1)
-     */
-
-    // NOTE: We are making a major assumption that we will only be
-    //       performing 1 transformation at a time.
-    
-    HalfedgeIter e0, e1, e2, e3;
-    e0 = current_face -> halfedge(); // Top.
-    e1 = e0 -> next(); // Right.
-    e2 = e1 -> next(); // Bottom.
-    e3 = e2 -> next(); // Left.
-
-    int o1; // The index of the original face's edge.
-    int o2; // The index of the twin face's edge.
-    HalfedgeIter twin; // The twin transition edge with index o2.
-
-    // Compute the transition variables and apply local transformation.
-    if(v < 0.0)
-    {
-      twin = e0 -> twin();
-      o1 = 0;
-      v = v + 1.0;
-    }
-    else if(u > 1.0)
-    {
-      twin = e1 -> twin();
-      o1   = 1;
-      u    = u - 1.0;
-    }
-    else if(v > 1.0)
-    {
-      twin = e2 -> twin();
-      o1   = 2;
-      v    = v - 1.0;
-    }
-    else if(u < 0.0)
-    {
-      twin = e3 -> twin();
-      o1   = 3;
-      u    = u + 1.0;
-    }
-    else
-    {
-      return false;
-    }
-
-    o2 = determineOrientation(twin);
-    current_face = twin -> face();
-
-    u -= .5;
-    v -= .5;
-    /*
-     * o2 == (o1 + 2) % 4 --> 0 clockwise turns.
-     * o2 == (o1 + 3) % 4 --> 1 clockwise turns.
-     * o2 == (o1 + 4) % 4 --> 2 clockwise turns.
-     * o2 == (o1 + 5) % 4 --> 3 clockwise turns.
-     */
-    int rotations = (o2 + 4 - o1 + 2) % 4;
-
-    /*
-     * u' = -v;
-     * v' =  u;
-     */
-
-    for(int i = 0; i < rotations; i++)
-    {
-      double u_new = -v;
-      double v_new = u;
-
-      u = u_new;
-      v = v_new;
-    }
-
-    u += .5;
-    v += .5;
-
-    return true;
-  }
-
-  // Returns how deep the given edge is in its on edge's cycle.
-  inline int Curve_Silhouette::determineOrientation(HalfedgeIter edge)
-  {
-    HalfedgeIter e0 = edge->face()->halfedge();
-    int output = 0;
-    while(e0 != edge)
-    {
-      output++;
-      e0 = e0 -> next();
-    }
-
-    return output;
-  }
-
   // Populates the given list with critical points found on the silhouette curve
   // function defined on the given mesh.
   void Curve_Silhouette::findCriticalPoints (HalfedgeMesh& mesh,
@@ -475,7 +345,6 @@ namespace CMU462
   {
     int index = 0;
     
-    PatchDrawer patcher;
     for(FaceIter f = mesh.facesBegin(); f != mesh.facesEnd(); f++)
     {
       std::vector<Vector3D> control_points;
@@ -766,5 +635,192 @@ namespace CMU462
 		    2*f*f_v
 		    );
   }
+
+  bool Curve_Silhouette::visible(std::vector<Vector3D> & control_points,
+				 double u,
+				 double v)
+  {
+    return F(control_points, u, v) > 0;
+  }
+
+  // Finds the points along a 1D parameter aligned line in a bicubic patch.
+  // where F (The silhouette defining function) is 0.
+  // returns the values for the parameter along the degree of freedom where 0's occur.
+  // roots that are outside of the range 0 to 1 will be disregarded for bicubic patch
+  // defined meshes.
+  void Curve_Silhouette::findRoots_F(std::vector<Vector3D> & control_points,
+				     HalfedgeIter edge,
+				     std::vector<double> & roots)
+  {
+    int orientation = determineOrientation(edge);
+
+    switch(orientation)
+    {
+      case 0:
+	findRoots_F_v(control_points, 0, roots);
+	return;
+      case 1:
+	findRoots_F_u(control_points, 1, roots);
+	return;
+      case 2:
+	findRoots_F_v(control_points, 1, roots);
+	return;
+      case 3:
+	findRoots_F_u(control_points, 0, roots);
+	return;
+    }
+  }
+    
+  void Curve_Silhouette::findRoots_F_u(std::vector<Vector3D> & control_points,
+		     double u,
+		     std::vector<double> & roots
+		     )
+  {
+    
+  }
   
+  void Curve_Silhouette::findRoots_F_v(std::vector<Vector3D> & control_points,
+		     double v,
+		     std::vector<double> & roots
+		     )
+  {
+
+  }
+
+
+  // -- Critical Point and curve drawing functions.
+
+  void CurveTracer::drawCriticalPoints()
+  {
+    //glDisable(GL_DEPTH_TEST);
+    glPointSize(20.0);
+
+
+    for(std::vector<Critical_Point>::iterator iter = critical_points.begin();
+	iter != critical_points.end(); ++iter)
+    {
+	Vector3D p = iter -> location;
+	//	 cout << p << endl;
+	switch(iter -> type)
+	{
+	  case MIN: glColor3f(0.0, 0.0, 1.0);
+	    break;
+	  case MAX: glColor3f(1.0, 0.0, 0.0);
+	    break;
+	  case SADDLE: glColor3f(0.0, 1.0, 0.0);//green
+	    break;
+	  case ORIGINATION: glColor3f(1.0, 1.0, 1.0);
+	    break;
+	}
+
+	glBegin( GL_POINTS );
+	glVertex3d( p.x, p.y, p.z );
+	glEnd();
+    }
+
+
+    //glEnable( GL_DEPTH_TEST );
+  }
+
+  void CurveTracer::drawCurves()
+  {
+    // -- Draw all each one of the morse smale edges.
+    for(auto iter = curves.begin(); iter != curves.end(); ++iter)
+    {
+	iter -> draw();
+    }
+  }
+
+
+  void CurveTracer::trace_all_silhouettes(
+       HalfedgeMesh& mesh, Vector3D eye_direction)
+  {
+    Curve_Silhouette curve_tracer(eye_direction);
+    critical_points.clear();
+    curves.clear();
+
+    //curve_tracer.findCriticalPoints(*mesh, critical_points);
+
+    // Find the Entire Morse Smale Complex.
+    curve_tracer.morse_smale_complex(mesh, critical_points, curves);
+    curve_tracer.find_unique_silhouette_points(
+					       critical_points.size(),
+					       curves,
+					       critical_points);
+
+    curve_tracer.trace_zero_level_sets(critical_points, curves);
+      
+    //morse_smale_edges.clear();
+  }
+
+  
+  void CurveTracer::trace_parametric_curve(HalfedgeIter edge, Vector3D eye_direction)
+  {
+    
+    // Setup the tracing parameters.
+    std::vector<Vector3D> control_points;
+    Curve_Silhouette curve_tracer(eye_direction); // Used for visibility checks.
+    double u, v, du, dv;
+    bool visible = true;
+
+    // Allocate a new Curve Object to store the results in.
+    curves.push_back(PointCurve());
+    PointCurve * curve = &curves[curves.size() - 1];
+    curve -> visible = visible;
+
+    
+    HalfedgeIter e0 = edge;
+    
+    do
+    {
+      determineLocationAndHeading(edge, u, v, du, dv);
+      du /= STEPS_PER_PATCH;
+      dv /= STEPS_PER_PATCH;
+      
+      // Compute the current local Bicubic Patch.
+      patcher.computeControlPoints(edge->face(), control_points);
+
+      // Add regularly spaced points on the halfedge defined curve.
+      for(int i = 0; i < STEPS_PER_PATCH; i++)
+      {
+	u += du;
+	v += dv;
+
+	// If visibility has changed, split the curve.
+	if(curve_tracer.visible(control_points, u, v) != visible)
+	{
+	  visible = !visible;
+	  curves.push_back(PointCurve());
+	  curve = &curves[curves.size() - 1];
+	  curve -> visible = visible;
+	}
+	
+	curve -> addPoint(evaluatePatch(control_points, u, v));
+      }
+
+      edge = edge->next();
+
+      // Check for curve termination conditions.
+      VertexIter vertex = edge->vertex();
+      if(vertex -> isBoundary()) {break;}
+      if(vertex -> degree() != 4){break;}
+      edge = edge -> twin() -> next();
+
+      cout << &edge << endl;
+
+    }while(edge != e0); 
+  }
+
+  void CurveTracer::clearData()
+  {
+    critical_points.clear();
+    curves.clear();
+  }
+
+  // Exports all of the data as paths and points in an svg file.
+  void CurveTracer::export_to_svg()
+  {
+    cout << "IMPLEMENT Export_to_svg in curveTracer.cpp" << endl;
+  }
+
 }

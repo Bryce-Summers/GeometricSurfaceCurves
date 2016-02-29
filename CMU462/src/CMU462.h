@@ -10,10 +10,12 @@
 // quaternions seem pretty cool.
 #include "quaternion.h"
 
-
 #include "color.h"
 #include "renderer.h"
 #include "viewer.h"
 
 #include "base64.h"
 #include "tinyxml2.h"
+
+#include "polynomial.h"
+#include "polynomialVector3D.h"

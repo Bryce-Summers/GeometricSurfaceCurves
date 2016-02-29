@@ -2,6 +2,7 @@
 #define CMU462_COMPLEX_H
 
 #include "vector2D.h"
+#include <math.h>
 
 namespace CMU462 {
 
@@ -22,7 +23,7 @@ class Complex : public Vector2D {
    * Constructor.
    * Initializes to a+bi.
    */
-  Complex( double a, double b ) : Vector2D( a, b ) { }
+  Complex( double a, double b ) : Vector2D( a, b ) {}
 
   /**
    * Constructor.
@@ -59,6 +60,23 @@ class Complex : public Vector2D {
     return exp( x ) * Complex( cos( y ), sin( y ));
   }
 
+  /**
+   * Complex exponentiation.
+   */
+  inline Complex pow(double n) const
+  {
+    // Convert to polar representation.
+    double mag   = norm();
+    double theta = arg();
+  
+    // Perform exponentiation using real values.
+    mag   = std::pow(mag, n);
+    theta = theta*n;
+  
+    // Convert back to complex plane coordinates.    
+    return mag * Complex( cos( theta ), sin( theta ));
+  }
+  
   // Complex multiply by z
   inline void operator*=( const Complex& z ) {
     double a = x;
@@ -74,13 +92,20 @@ class Complex : public Vector2D {
     *this *= z.inv();
   }
 
+  // returns the real part of z
+  double Re()
+  {
+    return x;
+  }
+
+  // returns the imaginary part of z
+  double Im()
+  {
+    return y;
+  }
+
 }; // class Complex
 
-// returns the real part of z
-double Re( const Complex& z );
-
-// returns the imaginary part of z
-double Im( const Complex& z );
 
 // binary Complex multiplication
 inline Complex operator*( const Complex& z1, const Complex& z2 ) {
@@ -89,11 +114,44 @@ inline Complex operator*( const Complex& z1, const Complex& z2 ) {
     return z;
 }
 
+
 // complex division
 inline Complex operator/( const Complex& z1, const Complex& z2 ) {
     Complex z = z1;
     z /= z2;
     return z;
+}
+
+inline Complex operator+(const Complex& z1, const double real)
+{
+    Complex z = z1;
+    z.x += real;
+    return z;
+}
+
+ inline Complex operator+(const double real, const Complex& z1)
+{
+    Complex z = z1;
+    z.x += real;
+    return z;
+}
+
+inline Complex operator-(const double real, const Complex& z1)
+{
+  Complex other = Complex(real, 0);
+  return other - z1;
+}
+
+ inline Complex operator-(const Complex& z1, double real)
+{
+  Complex other = Complex(real, 0);
+  return z1 - other;
+}
+
+inline Complex operator/(double real, const Complex& z1)
+{
+  Complex other = Complex(real, 0);
+  return other / z1;
 }
 
 // prints components

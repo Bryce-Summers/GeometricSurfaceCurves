@@ -1,7 +1,8 @@
 #ifndef PATCH_DRAWER_H
 #define PATCH_DRAWER_H
 
-#include "halfEdgeMesh.h"
+#include "halfEdgeMesh.h" // Connectivity data structure.
+#include "PatchFunctions.h" // Math: Berstein polynomials, control point evaluation.
 
 /*
  * Patch Drawer,
@@ -29,25 +30,6 @@ using namespace std;
 namespace CMU462
 {
 
-  // The definition of Berstein basis functions at namespace level,
-  // so that they can be accessed everywhere. Not just in the patch drawer.
-  // Returns the interpolated value for the indexed
-  // berstein basis function for a bicubic patch.
-  // Also can return the evaluation of the derivatives.
-  // Returns B_[index,3] (input)
-  // REQUIRES: input in range [0, 1].
-  // REQUIRES: index in range [0, 3].
-  // REQUIRES: derivative >= 0. 0 --> non diferentiated function evaluation.
-  
-  double Bernstein(double input, int index, int derivative = 0);
-
-  // We could make this public eventually,
-  // because it might be useful for extracting curves.
-  Vector3D evaluatePatch(std::vector<Vector3D> & control_points,
-			 double u, double v,
-			 int partial_u = 0, int partial_v = 0);
-  
-  
   class PatchDrawer
   {
 
@@ -64,7 +46,7 @@ namespace CMU462
 	  */
 	 void drawCatmullClarkQuadPatch(FaceIter & face);
 
-	 // Derives the 16 control points associted with the given
+	 // Derives the 16 control points associated with the given
 	 // quadrilateral face.
 	 // pushes them onto the given control_point vector.
 	 // OUTPUT: a list of control points in row major order.
@@ -73,6 +55,16 @@ namespace CMU462
 	 // B10, B11, B12, B13,
 	 // B20, B21, B22, B23,
 	 // B30, B31, B32, B33,
+	 //
+	 // Half Edge and u/v coordinate orientation information.
+	 // (0,0) ----> (1,0) (u, v)
+	 //   .           |
+	 //  /|\          |
+	 //   |           |
+	 //   |          \|/
+	 //   |           .
+	 // (0,1) <---- (1, 1)
+	 // ENSURES: clears the input array of control points.
 	 void computeControlPoints(FaceIter & face,
 				   std::vector<Vector3D> & control_point);
 	 

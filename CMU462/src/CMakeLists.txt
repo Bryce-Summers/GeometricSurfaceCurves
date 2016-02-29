@@ -4,6 +4,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 # CMU462 library source files
 set(CMU462_SOURCE
+    polynomial.cpp
+    polynomialVector3D.cpp
     vector2D.cpp
     vector3D.cpp
     vector4D.cpp
@@ -22,6 +24,8 @@ set(CMU462_SOURCE
 # CMU462 library header files
 set(CMU462_HEADER
     CMU462.h
+    polynomial.h
+    polynomialVector3D.h
     vector2D.h
     vector3D.h
     vector4D.h

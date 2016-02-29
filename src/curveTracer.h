@@ -14,6 +14,8 @@
 
 #include "UnionFind/UF_Serial.h"
 
+#include "PatchFunctions.h"
+
 /*
  * Contour Tracer,
  * Written by Bryce Summers on 1/29/2016. (Started)
@@ -31,6 +33,53 @@ using namespace std;
 
 namespace CMU462
 {
+  
+  // Curve data encapsulates the generation, drawing, and exportation of
+  // point curves related to visual features of input meshes.
+  class CurveTracer
+  {
+    // ----------------
+    // -- Data Storage.
+    // ----------------
+
+  private:
+    std::vector<Critical_Point> critical_points;
+    std::vector<PointCurve> curves;
+
+    PatchDrawer patcher; // Used for computing the control points.
+
+    // The number of points traced per patch for u/v aligned parameter curves.
+    int STEPS_PER_PATCH = 10;
+    
+  public:
+
+    // ----------------
+    // -- Data Generation.
+    // ----------------
+
+    
+    // -- Traces all of the silhouette curves for the current viewpoint.
+    void trace_all_silhouettes(HalfedgeMesh& mesh, Vector3D eye_direction);
+
+    // -- Traces the loop including the curve cooresponding to the
+    //    given input edge from the control mesh.
+    void trace_parametric_curve(HalfedgeIter edge, Vector3D eye_direction);
+
+
+    // ------------------------------
+    // -- Data Drawing to the screen.
+    // ------------------------------
+
+    void drawCriticalPoints();
+    void drawCurves();
+
+    // Clears all of the data from this object.
+    void clearData();
+
+    // Exports all of the data as paths and points in an svg file.
+    void export_to_svg();
+
+  };
 
   
   
@@ -39,6 +88,10 @@ namespace CMU462
   // given a specification for the function and its 1st and 2nd order derivatives in u and v.
   class Curve_Silhouette
   {
+
+  private:
+    PatchDrawer patcher; // Used for computing the control points.    
+    
     public:
 
     // The critical points will be accurate to within a manhattan metric distance
@@ -61,6 +114,10 @@ namespace CMU462
     Curve_Silhouette(Vector3D e){this->E = e;};
     ~Curve_Silhouette(){}
 
+    // returns true iff the eye can see this location.
+    // reduces to a sign check of f.
+    bool visible(std::vector<Vector3D> & control_points, double u, double v);
+    
     // Given a list of silhouette point locations,
     // Creates a Point curve associated with each one of the silhouette points.
     // to edges.
@@ -110,31 +167,9 @@ namespace CMU462
     {
       findCriticalPoints(mesh, NULL, &points);
     }
-    
+
 
   private:
-
-    // Performs as many transitions as are necessary and updates all of the
-    // input values according to the ending location on the geometric surface.
-    void performTransitions(FaceIter & current_face,
-			    double & u,
-			    double & v,
-			    std::vector<Vector3D> & control_points);
-    
-    // Checks the given u and v coordinates for being out of the [0, 1) x [0, 1)
-    // If they are then it transitions to the correct new face and
-    // localizes the u and v value to the new face.
-    // Returns true iff a transition occured.
-    // The face iter is updated as necessary.
-    // This function works hand and hand with face to patch control point
-    // translation function. They need to be consistent.
-    // ENSURES: Applies up to 1 transition. This function should be called repeatedly
-    // until it no longer provides a valid transition. For instance this function should
-    // be called twice when u < 0 and v < 0.
-    bool transitionIfNeccessary(FaceIter & current_face, double & u, double & v);
-
-    inline int determineOrientation(HalfedgeIter edge);
-
 
     // Returns false if it encounters a boundary.
     // Follows the 0 set perpendicular to the gradient in a loop.
@@ -152,6 +187,13 @@ namespace CMU462
     void movePerpGrad(double & u, double & v,
 		      FaceIter & current_face,
 		      std::vector<Vector3D> & control_points);
+
+    // Performs as many transitions as are necessary and updates all of the
+    // input values according to the ending location on the geometric surface.
+    void performTransitions(FaceIter & current_face,
+			    double & u,
+			    double & v,
+			    std::vector<Vector3D> & control_points);
 
 
 
@@ -214,6 +256,25 @@ namespace CMU462
     // The gradient of the sqr of f, minnimums coorespond to 0 points.
     Vector2D grad_f_2(std::vector<Vector3D> & control_points,
 		      double u, double v);
+
+    // Finds the points along a 1D parameter aligned line in a bicubic patch.
+    // where F (The silhouette defining function) is 0.
+    // returns the values for the parameter along the degree of freedom where 0's occur.
+    // roots that are outside of the range 0 to 1 will be disregarded for bicubic patch
+    // defined meshes.
+    void findRoots_F(std::vector<Vector3D> & control_points,
+		     HalfedgeIter edge,
+		     std::vector<double> & roots);
+    
+    void findRoots_F_u(std::vector<Vector3D> & control_points,
+			    double u,
+			    std::vector<double> & roots
+			    );
+    void findRoots_F_v(std::vector<Vector3D> & control_points,
+			    double v,
+			    std::vector<double> & roots
+			    );
+      
   };
   
 }

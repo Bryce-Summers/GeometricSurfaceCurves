@@ -13,12 +13,14 @@ set(COLLADA_VIEWER_SOURCE
     collada.cpp
     #critical_points.cpp
     halfEdgeMesh.cpp
+    PatchFunctions.cpp
     pointCurve.cpp
     meshResampler.cpp
     patchDrawer.cpp
     curveTracer.cpp
     meshEdit.cpp
     png.cpp
+    testing.cpp
     main.cpp
 )
 
@@ -34,6 +36,7 @@ set(COLLADA_VIEWER_HEADER
     texture.h
     collada.h
     critical_points.h
+    PatchFunctions.h
     halfEdgeMesh.h
     pointCurve.h
     patchDrawer.h
@@ -41,6 +44,7 @@ set(COLLADA_VIEWER_HEADER
     meshResampler.h
     meshEdit.h
     png.h
+    testing.h
 )
 
 

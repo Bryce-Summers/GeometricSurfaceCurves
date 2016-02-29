@@ -47,6 +47,8 @@ namespace CMU462
     // perspective projection.
     void draw();
 
+    bool visible = true;
+    
     // Extra information that can be used with these curves.
     Critical_Point p1;
     Critical_Point p2;

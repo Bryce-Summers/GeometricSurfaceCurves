@@ -109,10 +109,10 @@ namespace CMU462 {
       draw_meshes();
 
       // // Draw the helpful picking messages.
-	  if (showHUD)
-	  {
-		drawHUD();
-	  }
+      if (showHUD)
+      {
+	drawHUD();
+      }
 
       return;
    }
@@ -153,7 +153,7 @@ namespace CMU462 {
 
 	    // Update the viewing direction.
 	    eye_direction.x = sin(camera_angles.x)*cos(camera_angles.y*.99);
-	    eye_direction.y = cos(camera_angles.x)*cos(camera_angles.y*.99);;
+	    eye_direction.y = cos(camera_angles.x)*cos(camera_angles.y*.99);
 	    eye_direction.z = sin(camera_angles.y);
 	    
             // x is horizontal screen rotational angle.
@@ -222,7 +222,7 @@ namespace CMU462 {
          // reset view transformation
          case ' ':
 	   // reset_camera();
-	   find_silhouette_curves();
+	   trace_curve();
            break;	    
 
          case 'u':
@@ -1020,7 +1020,6 @@ namespace CMU462 {
     * Depending on how far along you are various properties will segfault
     * if your mesh does not maintain its invariants.
     */
-   // FIXME : Convert these to messages on screen with SKY's code.
    void MeshEdit::drawHUD()
    {
 
@@ -1224,7 +1223,7 @@ namespace CMU462 {
    void MeshEdit::renderMesh( HalfedgeMesh& mesh )
    {
       glEnable(GL_LIGHTING);
-      //drawFaces( mesh );
+      //      drawFaces( mesh );
 
       // Edges are drawn with flat shading.
       glDisable(GL_LIGHTING);
@@ -1235,9 +1234,9 @@ namespace CMU462 {
       drawVertices( mesh );
       drawHalfedges( mesh );
 
-      // -- Draw Silhouette Curve computation elements.
-      drawCriticalPoints(critical_points);
-      drawMSEdges(morse_smale_edges);
+      // -- Computer Elements.
+      curve_tracer.drawCriticalPoints();
+      curve_tracer.drawCurves();
    }
 
    // Sets the current OpenGL color/style of a given mesh element, according to which elements are currently selected and hovered.
@@ -1387,53 +1386,7 @@ namespace CMU462 {
       h = selectedFeature.element->getHalfedge(); if( h != NULL ) { drawHalfedgeArrow( h ); }
 
       glEnable( GL_DEPTH_TEST );
-   }
-
-   void MeshEdit::drawCriticalPoints(std::vector<Critical_Point> & critical_points)
-   {
-     //glDisable(GL_DEPTH_TEST);
-     glPointSize(20.0);
-
-     // Apply styles before calling glBegin().
-
-     
-     for(std::vector<Critical_Point>::iterator iter = critical_points.begin();
-	 iter != critical_points.end(); ++iter)
-     {
-         Vector3D p = iter -> location;
-	 //	 cout << p << endl;
-	 switch(iter -> type)
-	 {
-	 case MIN: glColor3f(0.0, 0.0, 1.0);
-	   break;
-	 case MAX: glColor3f(1.0, 0.0, 0.0);
-	   break;
-  	 case SADDLE: glColor3f(0.0, 1.0, 0.0);//green
-	   break;
-	 case ORIGINATION: glColor3f(1.0, 1.0, 1.0);
-	   break;
-	 }
-
-	 glBegin( GL_POINTS );
-         glVertex3d( p.x, p.y, p.z );
-	 glEnd();
-     }
-
-
-     //glEnable( GL_DEPTH_TEST );
-   }
-
-  void MeshEdit::drawMSEdges(std::vector<PointCurve> & ms_edges)
-  {
-    glColor3f(0.0, 1.0, 0.0);//green
-
-    // -- Draw all each one of the morse smale edges.
-    for(auto iter = ms_edges.begin(); iter != ms_edges.end(); ++iter)
-    {
-      iter -> draw();
-    }
-  }
-  
+   }  
 
   void MeshNode::getBounds( Vector3D& low, Vector3D& high )
   {
@@ -1574,36 +1527,43 @@ namespace CMU462 {
       hoveredFeature.invalidate();
    }
 
-   void MeshEdit::find_silhouette_curves( void )
+   void MeshEdit::trace_curve( void )
    {
-      Curve_Silhouette curve_tracer(eye_direction);
-      critical_points.clear();
-      morse_smale_edges.clear();
+     // FIXME: Do stuff here using a curve tracer.
 
-      HalfedgeMesh* mesh;
-      // If an element is selected, resample the mesh containing that
-      // element; otherwise, resample the first mesh in the scene.
-      if( selectedFeature.isValid() )
-      {
-         mesh = &( selectedFeature.node->mesh );
-      }
-      else
-      {
-         mesh = &( meshNodes.begin()->mesh );
-      }
+     HalfedgeMesh* mesh;
+     // If an element is selected, resample the mesh containing that
+     // element; otherwise, resample the first mesh in the scene.
+     if( selectedFeature.isValid() )
+     {
+	 mesh = &( selectedFeature.node->mesh );
+     }
+     else
+     {
+	 mesh = &( meshNodes.begin()->mesh );
+     }
 
-      //curve_tracer.findCriticalPoints(*mesh, critical_points);
+     if(selectedFeature.isValid())
+     {
+       HalfedgeElement * elem = selectedFeature.element;
 
-      // Find the Entire Morse Smale Complex.
-      curve_tracer.morse_smale_complex(*mesh, critical_points, morse_smale_edges);
-      curve_tracer.find_unique_silhouette_points(
-		   critical_points.size(),
-		   morse_smale_edges,
-		   critical_points);
+       Halfedge * he = elem -> getHalfedge();
+       Edge * edge   = elem -> getEdge();
 
-      curve_tracer.trace_zero_level_sets(critical_points, morse_smale_edges);
-      
-      //morse_smale_edges.clear();
+       if(he != NULL)
+       {
+	 curve_tracer.trace_parametric_curve(he->twin()->twin(), eye_direction);
+       }
+       else if (edge != NULL)
+       {
+	 curve_tracer.trace_parametric_curve(edge->halfedge(), eye_direction);
+       }
+       
+     }
+
+     // Trace all of the silhouettes.
+     // curve_tracer.trace_all_silhouettes(*mesh, eye_direction);
    }
+ 
 
 } // namespace CMU462

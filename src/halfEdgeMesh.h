@@ -171,7 +171,9 @@ namespace CMU462
    class Face;
    class Halfedge;
 
-   enum Critical_Point_Type{MIN, MAX, SADDLE, ORIGINATION};
+   enum Critical_Point_Type{MIN, MAX, SADDLE, ORIGINATION, TERMINATION};
+   // ORIGINATION means this is a point where a curve starts.
+   // TERMINATION means that this is a point where a curve ends. 
   
    class Critical_Point
    {

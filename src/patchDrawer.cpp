@@ -47,6 +47,9 @@ namespace CMU462
   void PatchDrawer::computeControlPoints(FaceIter & face,
 					 std::vector<Vector3D> & cpts)
   {
+    // First of all, ensure that the control points array is clear.
+    cpts.clear();
+    
 	// We assume that the face has 4 vertices.
 
 	if(face->degree() != 4)
@@ -303,90 +306,6 @@ namespace CMU462
 
 	}
 
-  }
-
-  // A parametric function that describes the surface.
-  Vector3D evaluatePatch(
-	   std::vector<Vector3D> & control_points,
-	   double u, double v,
-	   int partial_u, int partial_v)
-  {
-	Vector3D sum(0,0,0);
-
-	for(int i = 0; i < 4; i++)
-	for(int j = 0; j < 4; j++)
-	{
-	  sum += control_points[i + 4*j] *
-	         Bernstein(u, i, partial_u) *
-	         Bernstein(v, j, partial_v);
-	}
-
-	return sum;
-  }
-
-  double Bernstein(double u, int index, int derivative)
-  {
-    switch(derivative)
-    {
-      // Normal, undifferentiared value.
-      case 0:
-	switch(index)
-	{
-	  case 0: return pow(1.0 - u, 3);
-	  case 1: return 3*u*pow(1.0 - u, 2);
-	  case 2: return 3*u*u*(1.0 - u);
-	  case 3: return pow(u, 3);
-	}
-
-      // First derivatives.
-      case 1:
-	switch(index)
-	{
-	  case 0: return -3*pow(1.0 - u, 2);
-	  case 1: return (u - 1.0)*(9.0*u - 3.0);
-	  case 2: return (6.0 - 9.0*u)*u;
-	  case 3: return 3.0*u*u;
-	}
-	
-      case 2:
-	switch(index)
-	{
-	  case 0: return 6.0 - 6.0*u;
-	  case 1: return 18.0*u - 12.0;
-	  case 2: return 6.0 - 18.0*u;
-	  case 3: return 6.0*u;
-	}
-	
-      case 3:
-	switch(index)
-	{
-	  case 0: return -6.0;
-	  case 1: return 18.0;
-	  case 2: return -18.0;
-	  case 3: return 6.0;
-	}
-    }
-
-    if(derivative > 3)
-    {
-      return 0.0;
-    }
-
-    if(index < 0 || index > 3)
-    {
-	cerr << "ERROR: PatchDrawer::Bernstein index value not in range";
-	return 0.0;
-    }
-
-    if(derivative < 0)
-    {
-	cerr << "ERROR: PatchDrawer::Bernstein derivative value should not be negative.";
-	return 0.0;
-    }
-
-    cerr << "ERROR: PatchDrawer::Bernstein Something went wrong.";
-    return 0.0;
-    
   }
 
   // Rasterizes the control mesh's face with a simple draw polygon call.

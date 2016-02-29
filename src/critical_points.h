@@ -15,7 +15,7 @@ namespace CMU462
 {
 
   // The headers have been temporarily moved to halfEdgeMesh.h due to circular
-  // dependancies. I should find a better solution to this problem.
+  // dependancies. I really should find a better solution to this problem.
   // Sincerely, Bryce Summers
   
 }

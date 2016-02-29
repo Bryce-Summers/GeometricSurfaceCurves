@@ -298,11 +298,6 @@ class MeshEdit : public Renderer {
   DrawStyle selectStyle;  // style for currently selected element
   Color text_color;
 
-
-  
-
-
-  
   // -- Mouse input.
   // -- User Input variables.
   bool mouse_rotate;
@@ -367,13 +362,15 @@ class MeshEdit : public Renderer {
   void mesh_resample();
 
 
-  // -- Curve Finding Operations.
-  void find_silhouette_curves();
-  std::vector<Critical_Point> critical_points;
-  std::vector<PointCurve> morse_smale_edges;
-  void drawCriticalPoints(std::vector<Critical_Point> & critical_points);
-  void drawMSEdges(std::vector<PointCurve> & morse_smale_edges);
-  
+  // -- Curve Tracing Operations.
+  // Traces a curve depending on the current state of affairs.
+  // For instance, this traces a u or v parameter curve along the set of quad
+  // patches if the user has selected an half edge.
+  void trace_curve();
+
+  CurveTracer curve_tracer;
+
+ 
   Vector3D eye_direction;// Direction the camera is currently pointing.
 
   

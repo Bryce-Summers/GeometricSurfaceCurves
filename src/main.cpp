@@ -4,6 +4,7 @@
 #include "meshEdit.h"
 
 #include <iostream>
+#include "testing.h"
 
 using namespace std;
 using namespace CMU462;
@@ -31,6 +32,11 @@ int loadFile( MeshEdit* collada_viewer, const char* path ) {
 
 int main( int argc, char** argv ) {
 
+  // Test the polynomials.
+  Tester tester;
+  tester.test();
+  return 0;
+  
   // create viewer
   Viewer viewer = Viewer();
 
