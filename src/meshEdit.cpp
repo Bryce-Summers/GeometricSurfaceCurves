@@ -28,6 +28,7 @@ namespace CMU462 {
 
       showHUD = true;
       show_control_edges = true;
+      drawPatches = false;
       camera_angles = Vector3D(0.0, 0.0, 0.0);
 
       // 3D applications really like enabling the depth test,
@@ -266,6 +267,9 @@ namespace CMU462 {
          case 'E':// Toggle displaying control mesh edges or not.
          case 'e':
 	   show_control_edges = !show_control_edges;
+         case 'P':
+         case 'p':
+	   drawPatches = !drawPatches;
          default:
             break;
       }
@@ -1223,7 +1227,11 @@ namespace CMU462 {
    void MeshEdit::renderMesh( HalfedgeMesh& mesh )
    {
       glEnable(GL_LIGHTING);
-      //      drawFaces( mesh );
+
+      if(drawPatches)
+      {
+	drawFaces( mesh );
+      }
 
       // Edges are drawn with flat shading.
       glDisable(GL_LIGHTING);
@@ -1235,7 +1243,7 @@ namespace CMU462 {
       drawHalfedges( mesh );
 
       // -- Computer Elements.
-      curve_tracer.drawCriticalPoints();
+      //curve_tracer.drawCriticalPoints();
       curve_tracer.drawCurves();
    }
 
@@ -1558,11 +1566,16 @@ namespace CMU462 {
        {
 	 curve_tracer.trace_parametric_curve(edge->halfedge(), eye_direction);
        }
-       
+       else
+       {
+
+       }       
      }
 
-     // Trace all of the silhouettes.
-     // curve_tracer.trace_all_silhouettes(*mesh, eye_direction);
+     cout << "Tracing Silhouette Curves." << endl;
+     curve_tracer.clearData();
+     curve_tracer.trace_all_silhouettes(*mesh, eye_direction);
+
    }
  
 

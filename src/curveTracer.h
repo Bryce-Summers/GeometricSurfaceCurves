@@ -43,7 +43,7 @@ namespace CMU462
     // ----------------
 
   private:
-    std::vector<Critical_Point> critical_points;
+    std::vector<Critical_Point> points;
     std::vector<PointCurve> curves;
 
     PatchDrawer patcher; // Used for computing the control points.
@@ -81,26 +81,26 @@ namespace CMU462
 
   };
 
-  
-  
-  // FIXME : Evenetually we are going to abstract this to a subclass.
+
+  // FIXME : Eventually we are going to abstract this to a subclass.
   // We should make a base class that has all of the high level algorithms for tracing gradients and paths,
   // given a specification for the function and its 1st and 2nd order derivatives in u and v.
   class Curve_Silhouette
   {
-
+    
   private:
-    PatchDrawer patcher; // Used for computing the control points.    
+    PatchDrawer patcher; // Used for computing the control points.
     
     public:
 
     // The critical points will be accurate to within a manhattan metric distance
     // of tolerance*2;
     const double TOLERANCE          = .00000001;
+    const double LEVEL_TOLERANCE = .00001;
     const double CURVE_TRACING_STEP = .000001; // This needs to be larger than the Tolerance.
     // This is the coeficient for tracing along the gradient of the
     // magnitude of the gradient..
-    const int GRAD_SQR_COEF = 10000;
+    const int GRAD_SQR_COEF = 100;
 
     // This is the coeficient for tracing along the gradient.
     const int GRAD_COEF = 100;
@@ -117,6 +117,14 @@ namespace CMU462
     // returns true iff the eye can see this location.
     // reduces to a sign check of f.
     bool visible(std::vector<Vector3D> & control_points, double u, double v);
+
+    // Compiles a list of all silhouette points on patch boundaries.
+    // GIVEN: A halfedge mesh that specifies the set of patches.
+    //
+    // RETURNS: pts_out contains a set of points with useful metadata attached.
+    //
+    void find_silhouette_points(HalfedgeMesh& mesh,
+				std::vector<Critical_Point> & pts_out);
     
     // Given a list of silhouette point locations,
     // Creates a Point curve associated with each one of the silhouette points.
@@ -125,9 +133,12 @@ namespace CMU462
     //           level sets are closed.
     // REQUIREs: the critical points must be of the origination type.
     //           They also ought to be close to a 0 location for relevance.
+    //          -one_patch specifies whether the tracing should span multiple patches
+    //           if it is false, then the curve will only be traced until it exits
+    //           the patch.
     void trace_zero_level_sets(std::vector<Critical_Point> & silhouette_points,
 			       std::vector<PointCurve> & edges);
-
+ 
     // Finds exactly one point on each silhouette curve.
     // num_critical_points -> IN
     //  - specifies the number of critical points on the mesh that generated
@@ -190,6 +201,7 @@ namespace CMU462
 
     // Performs as many transitions as are necessary and updates all of the
     // input values according to the ending location on the geometric surface.
+    // Marks any critical points encountered as visited.
     void performTransitions(FaceIter & current_face,
 			    double & u,
 			    double & v,
@@ -257,23 +269,18 @@ namespace CMU462
     Vector2D grad_f_2(std::vector<Vector3D> & control_points,
 		      double u, double v);
 
-    // Finds the points along a 1D parameter aligned line in a bicubic patch.
-    // where F (The silhouette defining function) is 0.
-    // returns the values for the parameter along the degree of freedom where 0's occur.
-    // roots that are outside of the range 0 to 1 will be disregarded for bicubic patch
-    // defined meshes.
-    void findRoots_F(std::vector<Vector3D> & control_points,
-		     HalfedgeIter edge,
-		     std::vector<double> & roots);
-    
-    void findRoots_F_u(std::vector<Vector3D> & control_points,
-			    double u,
-			    std::vector<double> & roots
-			    );
-    void findRoots_F_v(std::vector<Vector3D> & control_points,
-			    double v,
-			    std::vector<double> & roots
-			    );
+    // Appends all points along the given edge which lie along a silhouette curve.
+    // Ignores roots outside of the patch's bounds [0, 1) x [0, 1)
+    //
+    // edge is the location of intersects.
+    // edge -> halfedge() is the canonical oriented side that the roots will be
+    //    calculated from along the boundary u in [0, 1).
+    // edge -> halfedge() -> face() is the face that defines the canonical patch
+    //    coordinates, which will be stored within the Critical points
+    //    themselves for location equivalence checks.
+    //    
+    void findRoots_F(EdgeIter edge,
+		     std::vector<Critical_Point> & roots);
       
   };
   

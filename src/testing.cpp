@@ -58,24 +58,27 @@ namespace CMU462
 
     Polynomial p3 = ZERO;
     // This polynomial has roots 1, 2, 3, 4, 5. They are all found accuratly.
-    /*
-    p3 -> addTrailingTerm(1);
-    p3 -> addTrailingTerm(-15);
-    p3 -> addTrailingTerm(85);
-    p3 -> addTrailingTerm(-225);
-    p3 -> addTrailingTerm(274);
-    p3 -> addTrailingTerm(-120);
-    */
+    
+    p3.addTrailingTerm(1);
+    p3.addTrailingTerm(-15);
+    p3.addTrailingTerm(85);
+    p3.addTrailingTerm(-225);
+    p3.addTrailingTerm(274);
+    p3.addTrailingTerm(-120);
+    
 
     // This polynomial has roots:
     // -1.32, 1.32, 4.56, 4.58, 4.6.
-    // Thus far we only find don't find the close last 3 values accuratly.
+    // Thus far we only find -1.32, 1.32, and 4.53658.
+    // We don't find the close last 3 values accuratly.
+    /*
     p3.addTrailingTerm(1);
     p3.addTrailingTerm(-13.74);
     p3.addTrailingTerm(61.1864);
     p3.addTrailingTerm(-72.1295);
     p3.addTrailingTerm(-109.647);
     p3.addTrailingTerm(167.393);
+    */
 
     std::cout << "Quintic Polynomial: " << p3 << std::endl;
     
@@ -87,7 +90,25 @@ namespace CMU462
     {
       cout << "Root: " << *iter << " -> " << p3.eval(*iter)<< endl;
     }
+
+    Polynomial x, y, z;
+
+    x.addTrailingTerm(1);
+    x.addTrailingTerm(1);
+
+    y.addTrailingTerm(2);
+    y.addTrailingTerm(2);
+
+    z.addTrailingTerm(3);
+    z.addTrailingTerm(3);
+
+    PolynomialVector3D vec(x, y, z);
+
+    cout << "vec - vec = " << vec - vec << endl;
+    cout << "vec + vec = " << vec + vec << endl;
     
-      
+    cout << vec << endl;
+    vec = dot(vec, vec);
+    cout << vec << endl;
   }
 }

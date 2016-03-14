@@ -4,6 +4,7 @@
 #include <ostream>
 #include <cmath>
 #include "polynomial.h"
+#include "vector3D.h"
 
 namespace CMU462 {
 
@@ -158,6 +159,25 @@ inline PolynomialVector3D cross( const PolynomialVector3D& u, const PolynomialVe
   return PolynomialVector3D( u.y*v.z - u.z*v.y,
 			     u.z*v.x - u.x*v.z,
 			     u.x*v.y - u.y*v.x );
+}
+
+// -- Mixed Type operators.
+ 
+inline PolynomialVector3D operator* ( const Polynomial p, const Vector3D& v ) {
+  return PolynomialVector3D( p*v.x, p*v.y, p*v.z);
+}
+
+inline PolynomialVector3D operator* (const Vector3D& v,  const Polynomial p) {
+  return p*v;
+}
+
+// dot product (a.k.a. inner or scalar product)
+inline Polynomial dot(const PolynomialVector3D& u, const Vector3D& v ){
+  return u.x*v.x + u.y*v.y + u.z*v.z;
+}
+
+inline Polynomial dot(const Vector3D& v, const PolynomialVector3D& u){
+  return u.x*v.x + u.y*v.y + u.z*v.z;
 }
 
 // prints components

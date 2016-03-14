@@ -35,7 +35,7 @@ namespace CMU462
 
     for(int i = deg; i >= 0; i--)
     {
-      out = (out + getCoef(i))*x;
+      out = out*x + getCoef(i);
     }
 
     return out;
@@ -61,6 +61,32 @@ namespace CMU462
   void Polynomial::addTrailingTerm(double coef)
   {
     data.push_front(coef);
+  }
+  
+  void Polynomial::addTrailingTerms (double c1)
+  {
+    data.push_front(c1);
+  }
+  
+  void Polynomial::addTrailingTerms(double c1, double c2)
+  {
+    data.push_front(c1);
+    data.push_front(c2);
+  }
+
+  void Polynomial::addTrailingTerms(double c1, double c2, double c3)
+  {
+    data.push_front(c1);
+    data.push_front(c2);
+    data.push_front(c3);
+  }
+  
+  void Polynomial::addTrailingTerms(double c1, double c2, double c3, double c4)
+  {
+    data.push_front(c1);
+    data.push_front(c2);
+    data.push_front(c3);
+    data.push_front(c4);
   }
 
   // Removes the lowest degree term and lowers the degree of all terms by 1.
@@ -331,16 +357,10 @@ namespace CMU462
 
     dividend.reduce();
     quotient.reduce();
-
-    std::cout << "Remainder = " << dividend << std::endl;
-    std::cout << "Quotient = "  << quotient << std::endl;
-    
+  
     remainder_out = dividend;
     quotient_out  = quotient;
-
-    std::cout << "Remainder = " << remainder_out << std::endl;
-    std::cout << "Quotient = "  << quotient_out << std::endl;
-    
+   
     return;
   }
 
@@ -350,10 +370,7 @@ namespace CMU462
     Polynomial remainder;
 
     division(other, quotient, remainder);
-
-    std::cout << "Quotient = " << quotient << std::endl;
-    std::cout << "Remainder = "  << remainder << std::endl;
-    
+   
     return quotient;
   }
 
@@ -455,9 +472,12 @@ namespace CMU462
     start_interval.flips_lower = sturm_sign_flips(sturm_chain, lower_in);
     start_interval.flips_upper = sturm_sign_flips(sturm_chain, upper_in);
 
-    std::cout << "lower_flips = " << start_interval.flips_lower << "\n";
-    std::cout << "lower_flips = " << start_interval.flips_upper << "\n";
-    
+    // Terminate if we don't detect any real roots in the input interval.
+    if(start_interval.flips_lower == start_interval.flips_upper)
+    {
+      return; // No roots in interval.
+    }
+ 
     // Keep a stack of intervals;
     // In this implementation we will push intervals lower, then upper.
     // When popping upper will come out first, then lower.
@@ -538,10 +558,8 @@ namespace CMU462
   // Computes the entire Sturm Chain for use in root finding.
   void Polynomial::computeSturmChain(SturmChain & chain) const
   {
-    std::cout << "Sturm Chain.\n";
     Polynomial p1 = copy();
     chain.push_back(p1);
-    std::cout << p1 << "\n";
 
     if(p1.isZero())
     {     
@@ -550,17 +568,14 @@ namespace CMU462
 
     Polynomial p2 = p1. differentiate();
     chain.push_back(p2);
-    std::cout << p2 << "\n";
 
     while(!p2.isZero())
     {
       Polynomial remainder_3;
 
-      remainder_3 = (p1 / p2);
-      remainder_3 *= -1;
+      remainder_3 = -(p1 % p2);
       
       chain.push_back(remainder_3);
-      std::cout << remainder_3 << std::endl;
 
       p1 = p2;
       p2 = remainder_3;

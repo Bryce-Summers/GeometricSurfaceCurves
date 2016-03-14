@@ -80,12 +80,84 @@ namespace CMU462
 
     if(derivative < 0)
     {
-	cerr << "ERROR: PatchDrawer::Bernstein derivative value should not be negative.";
+	cerr << "ERROR: PatchFunctions::Bernstein derivative value should not be negative.";
 	return 0.0;
     }
 
-    cerr << "ERROR: PatchDrawer::Bernstein Something went wrong.";
+    cerr << "ERROR: Patchfunctions::Bernstein Something went wrong.";
     return 0.0;
+    
+  }
+
+  bool Bernstein_3::initialised = false;
+  Polynomial Bernstein_3::B[4][4];
+  
+  Polynomial Bernstein_poly(int index, int derivative)
+  {
+    // Make sure the reference polynomials are allocated.
+    if(!Bernstein_3::initialised)
+    {
+      Bernstein_3::init();
+    }
+
+    if(index <= 3 && derivative <= 3)
+    {	
+      return Bernstein_3::B[index][derivative].copy();
+    }    
+
+    if(derivative > 3)
+    {
+      return Polynomial::ZERO();
+    }
+
+    if(index < 0 || index > 3)
+    {
+	cerr << "ERROR: PatchDrawer::Bernstein index value not in range";
+	return Polynomial::ZERO();
+    }
+
+    if(derivative < 0)
+    {
+	cerr << "ERROR: PatchFunctions::Bernstein derivative value should not be negative.";
+	return Polynomial::ZERO();
+    }
+
+    cerr << "ERROR: PatchFunctions::Bernstein Something went wrong.";
+    return Polynomial::ZERO();
+  }
+
+  void Bernstein_3::init()
+  {
+    Bernstein_3::initialised = true;
+
+    for(int r = 0; r < 4; r++)
+    for(int c = 0; c < 4; c++)
+    {
+      Bernstein_3::B[r][c] = Polynomial::ZERO();
+    }
+    
+    // 0th derivative original cubic polynomials.
+    Bernstein_3::B[0][0].addTrailingTerms(-1,  3, -3, 1);
+    Bernstein_3::B[1][0].addTrailingTerms( 3, -6,  3, 0);
+    Bernstein_3::B[2][0].addTrailingTerms(-3,  3,  0, 0);
+    Bernstein_3::B[3][0].addTrailingTerms( 1,  0,  0, 0);
+
+    // quadratic 1st derivative polynomials.
+    Bernstein_3::B[0][1].addTrailingTerms(-3,  6, -3);
+    Bernstein_3::B[1][1].addTrailingTerms( 9, -12, 3);
+    Bernstein_3::B[2][1].addTrailingTerms(-9,  6,  0);
+    Bernstein_3::B[3][1].addTrailingTerms( 3,  0,  0);
+
+    // Linear 2nd derivative polynomials.
+    Bernstein_3::B[0][2].addTrailingTerms( -6,   6);
+    Bernstein_3::B[1][2].addTrailingTerms( 18, -12);
+    Bernstein_3::B[2][2].addTrailingTerms(-18,   6);
+    Bernstein_3::B[3][2].addTrailingTerms(  6,   0);
+
+    Bernstein_3::B[0][3].addTrailingTerms( -6);
+    Bernstein_3::B[1][3].addTrailingTerms( 18);
+    Bernstein_3::B[2][3].addTrailingTerms(-18);
+    Bernstein_3::B[3][3].addTrailingTerms(  6);
     
   }
   
@@ -139,6 +211,9 @@ namespace CMU462
     int o2; // The index of the twin face's edge.
     HalfedgeIter twin; // The twin transition edge with index o2.
 
+    double u_original = u;
+    double v_original = v;
+    
     // Compute the transition variables and apply local transformation.
     if(v < 0.0)
     {
@@ -171,7 +246,10 @@ namespace CMU462
 
     o2 = determineOrientation(twin);
     current_face = twin -> face();
+   
 
+    // Now perform rotation transformations.
+    
     u -= .5;
     v -= .5;
     /*
@@ -199,6 +277,38 @@ namespace CMU462
     u += .5;
     v += .5;
 
+    // Mark any equivalant point on the edge we just crossed as visited.
+    
+    EdgeIter edge = twin -> edge();
+
+    // Change to the new coordinate space if the canonical face for this edge is
+    // the twin, instead of the original, otherwise use the coordinates in the
+    // original space.
+    if(edge -> halfedge() == twin)
+    {
+      u_original = u;
+      v_original = v;
+    }
+
+    const double TOL = .1;
+    // NOTE: in theory the number of intersects is bounded by 5 for
+    ///      silhouette curves.
+    std::vector<Critical_Point *> & intersects = edge -> intersects;
+    for(auto iter = intersects.begin();
+	iter != intersects.end();
+	++iter)
+    {
+      
+      Critical_Point * point = *iter;
+
+      if( abs(point -> u - u_original) < TOL &&
+	  abs(point -> v - v_original) < TOL)
+	{
+	  point -> visited = true;
+	}
+    }
+
+    
     return true;
   }
 
@@ -247,18 +357,40 @@ namespace CMU462
     cerr << "DetermineLocationAndHeading: Something has gone terribly wrong." << endl;
   }
 
+  void orient_coordinate_along_edge(HalfedgeIter edge,
+				    double x_in,
+				    double & u,
+				    double & v)
+  {
+    // We reduce this problem to finding the origin point for the edge,
+    // and the unit edge direction and adding the edge direction
+    // at a distance of x_in to the origin.
+    // This seems pretty simple.
+    double du, dv;
+    determineLocationAndHeading(edge, u, v, du, dv);
+
+    u += du*x_in;
+    v += dv*x_in;
+  }
+
   bool findCubicRoots(double a, double b, double c, double d, // IN
 		      double & r1,  // OUT
 		      double & r2,  // OUT
 		      double & r3)  // OUT
   {
-
+    Complex c1, c2, c3;
+    
+    bool out = findCubicRoots(a, b, c, d, r1, r2, r3);
+    r1 = c1.Re();
+    r2 = c2.Re();
+    r3 = c3.Re();
+    return out;
   }
   
   bool findCubicRoots(double a, double b, double c, double d, // IN
-		      Complex r1,  // OUT
-		      Complex r2,  // OUT
-		      Complex r3)  // OUT
+		      Complex & r1,  // OUT
+		      Complex & r2,  // OUT
+		      Complex & r3)  // OUT
   {
 
     // Algorithm from https://en.wikipedia.org/wiki/Cubic_function.

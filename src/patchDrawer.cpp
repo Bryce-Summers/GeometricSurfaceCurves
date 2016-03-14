@@ -44,201 +44,209 @@ namespace CMU462
 	drawBicubicPatch(cpts);
   }
 
+
+  
   void PatchDrawer::computeControlPoints(FaceIter & face,
+					 std::vector<Vector3D> & cpts)
+  {
+    computeControlPoints(face->halfedge(), cpts);
+
+  }
+
+  void PatchDrawer::computeControlPoints(HalfedgeIter & edge,
 					 std::vector<Vector3D> & cpts)
   {
     // First of all, ensure that the control points array is clear.
     cpts.clear();
     
-	// We assume that the face has 4 vertices.
+    // We assume that the face is a quadrilateral with 4 vertices.
 
-	if(face->degree() != 4)
-	{
-	  cerr << "ERROR: PatchDrawer::drawCatmullClarkQuadPatch: face is not a quadrilateral.";
-	  //exit(-7);
-	  return;
-	}
-
-	HalfedgeIter edge = face->halfedge();
-
-	// First label the 4 points on the face and the 4 halfedges.
-	VertexIter v1, v2, v3, v4;
-	HalfedgeIter e1, e2, e3, e4;
-
-	e1 = edge;
-	e2 = e1->next();
-	e3 = e2->next();
-	e4 = e3->next();
-
-	v1 = e1->vertex();
-	v2 = e2->vertex();
-	v3 = e3->vertex();
-	v4 = e4->vertex();
-
-	Vector3D & p1 = v1->position;
-	Vector3D & p2 = v2->position;
-	Vector3D & p3 = v3->position;
-	Vector3D & p4 = v4->position;
-
-	int degree_1 = v1->degree();
-	int degree_2 = v2->degree();
-	int degree_3 = v3->degree();
-	int degree_4 = v4->degree();
-
-	// -- Declare the 16 control points.
-	Vector3D b11, b12, b21, b22, // Interior Points.
-                 b10, b20, b01, b02, // Edge Points.
-                 b13, b23, b31, b32,
-                 b00, b03, b30, b33; // Corner Points.
-
-	// -- Interior Points.
-	// First off we will compute the interior points,
-	// since we don't have to find anything.
-
-	// 2 --- 1  Numbers represent weights in a normalized mask.
-	// |     |
-	// | x   |  <-- 4 Interior points, in for orientations, biased towards the
-	// n --- 2      4 corners.
+    if(edge -> face() -> degree() != 4)
+    {
+	cerr << "ERROR: PatchDrawer::drawCatmullClarkQuadPatch: face is not a quadrilateral.";
+	//exit(-7);
+	return;
+    }
 
 
-	// Note all cases should be cyclic permutations of all indices modulo 4.
-	b11 = (p1*degree_1 + p2*2 + p3*1 + p4*2)/(degree_1 + 5);
-	b12 = (p2*degree_2 + p3*2 + p4*1 + p1*2)/(degree_2 + 5);
-	b22 = (p3*degree_3 + p4*2 + p1*1 + p2*2)/(degree_3 + 5);
-	b21 = (p4*degree_4 + p1*2 + p2*1 + p3*2)/(degree_4 + 5);
+    // First label the 4 points on the face and the 4 halfedges.
+    VertexIter v1, v2, v3, v4;
+    HalfedgeIter e1, e2, e3, e4;
 
-	// -- Now we will find all of the edge points.
+    e1 = edge;
+    e2 = e1->next();
+    e3 = e2->next();
+    e4 = e3->next();
 
-	// 2  --- 1  Numbers represent weights in a normalized mask.
-	// |      |
-	// 2n x-y 4 <-- Edge points x and y along a given edge.
-	// |      |
-	// 2  --- 1
+    v1 = e1->vertex();
+    v2 = e2->vertex();
+    v3 = e3->vertex();
+    v4 = e4->vertex();
 
-	Vector3D neighbor1, neighbor2;
+    Vector3D & p1 = v1->position;
+    Vector3D & p2 = v2->position;
+    Vector3D & p3 = v3->position;
+    Vector3D & p4 = v4->position;
 
-	// Half Edges on the twin faces.
-	// These will be used later when deriving the corner points.
-	HalfedgeIter e5, e6, e7, e8;
+    int degree_1 = v1->degree();
+    int degree_2 = v2->degree();
+    int degree_3 = v3->degree();
+    int degree_4 = v4->degree();
 
-	// Procceed in 4 orientations, which are cyclic permutations
-	// of each other.
+    // -- Declare the 16 control points.
+    Vector3D b11, b12, b21, b22, // Interior Points.
+             b10, b20, b01, b02, // Edge Points.
+             b13, b23, b31, b32,
+             b00, b03, b30, b33; // Corner Points.
 
-	// Edge points along edge 4.
-	e8 = getEdgeNeighborPositions(e4, neighbor1, neighbor2);
+    // -- Interior Points.
+    // First off we will compute the interior points,
+    // since we don't have to find anything.
 
-	b10 = 2*p2 + 1*p3 +
-	      2*degree_1*p1 + 4*p4 +
-	      2*neighbor1 + 1*neighbor2;
-	b10 /= (10 + 2*degree_1);
-
-	b20 = 1*p2 +        2*p3 +
-	      4*p1 +        2*degree_4*p4 +
-	      1*neighbor1 + 2*neighbor2;
-	b20 /= (10 + 2*degree_4);
-
-	// Edge points along edge 1.
-	e5 = getEdgeNeighborPositions(e1, neighbor1, neighbor2);
-
-	b02 = 2*p3 + 1*p4 +
-	      2*degree_2*p2 + 4*p1 +
-	      2*neighbor1 + 1*neighbor2;
-	b02 /= (10 + 2*degree_2);
-
-	b01 = 1*p3 +        2*p4 +
-	      4*p2 +        2*degree_1*p1 +
-	      1*neighbor1 + 2*neighbor2;
-	b01 /= (10 + 2*degree_1);
+    // 2 --- 1  Numbers represent weights in a normalized mask.
+    // |     |
+    // | x   |  <-- 4 Interior points, in for orientations, biased towards the
+    // n --- 2      4 corners.
 
 
-	// Edge points along edge 2.
-	e6 = getEdgeNeighborPositions(e2, neighbor1, neighbor2);
+    // Note all cases should be cyclic permutations of all indices modulo 4.
+    b11 = (p1*degree_1 + p2*2 + p3*1 + p4*2)/(degree_1 + 5);
+    b12 = (p2*degree_2 + p3*2 + p4*1 + p1*2)/(degree_2 + 5);
+    b22 = (p3*degree_3 + p4*2 + p1*1 + p2*2)/(degree_3 + 5);
+    b21 = (p4*degree_4 + p1*2 + p2*1 + p3*2)/(degree_4 + 5);
 
-	b23 = 2*p4 + 1*p1 +
-	      2*degree_3*p3 + 4*p2 +
-	      2*neighbor1 + 1*neighbor2;
-	b23 /= (10 + 2*degree_3);
+    // -- Now we will find all of the edge points.
 
-	b13 = 1*p4 +        2*p1 +
-	      4*p3 +        2*degree_2*p2 +
-	      1*neighbor1 + 2*neighbor2;
-	b13 /= (10 + 2*degree_2);
+    // 2  --- 1  Numbers represent weights in a normalized mask.
+    // |      |
+    // 2n x-y 4 <-- Edge points x and y along a given edge.
+    // |      |
+    // 2  --- 1
 
-	// Edge points along edge 3.
-	e7 = getEdgeNeighborPositions(e3, neighbor1, neighbor2);
+    Vector3D neighbor1, neighbor2;
 
-	b31 = 2*p1 + 1*p2 +
-	      2*degree_4*p4 + 4*p3 +
-	      2*neighbor1 + 1*neighbor2;
-	b31 /= (10 + 2*degree_4);
+    // Half Edges on the twin faces.
+    // These will be used later when deriving the corner points.
+    HalfedgeIter e5, e6, e7, e8;
 
-	b32 = 1*p1 +        2*p2 +
-	      4*p4 +        2*degree_3*p3 +
-	      1*neighbor1 + 2*neighbor2;
-	b32 /= (10 + 2*degree_3);
+    // Procceed in 4 orientations, which are cyclic permutations
+    // of each other.
+
+    // Edge points along edge 4.
+    e8 = getEdgeNeighborPositions(e4, neighbor1, neighbor2);
+
+    b10 = 2*p2 + 1*p3 +
+          2*degree_1*p1 + 4*p4 +
+          2*neighbor1 + 1*neighbor2;
+    b10 /= (10 + 2*degree_1);
+
+    b20 = 1*p2 +        2*p3 +
+          4*p1 +        2*degree_4*p4 +
+          1*neighbor1 + 2*neighbor2;
+    b20 /= (10 + 2*degree_4);
+
+    // Edge points along edge 1.
+    e5 = getEdgeNeighborPositions(e1, neighbor1, neighbor2);
+
+    b02 = 2*p3 + 1*p4 +
+          2*degree_2*p2 + 4*p1 +
+          2*neighbor1 + 1*neighbor2;
+    b02 /= (10 + 2*degree_2);
+
+    b01 = 1*p3 +        2*p4 +
+          4*p2 +        2*degree_1*p1 +
+          1*neighbor1 + 2*neighbor2;
+    b01 /= (10 + 2*degree_1);
+
+
+    // Edge points along edge 2.
+    e6 = getEdgeNeighborPositions(e2, neighbor1, neighbor2);
+
+    b23 = 2*p4 + 1*p1 +
+          2*degree_3*p3 + 4*p2 +
+          2*neighbor1 + 1*neighbor2;
+    b23 /= (10 + 2*degree_3);
+
+    b13 = 1*p4 +        2*p1 +
+          4*p3 +        2*degree_2*p2 +
+          1*neighbor1 + 2*neighbor2;
+    b13 /= (10 + 2*degree_2);
+
+    // Edge points along edge 3.
+    e7 = getEdgeNeighborPositions(e3, neighbor1, neighbor2);
+
+    b31 = 2*p1 + 1*p2 +
+          2*degree_4*p4 + 4*p3 +
+          2*neighbor1 + 1*neighbor2;
+    b31 /= (10 + 2*degree_4);
+
+    b32 = 1*p1 +        2*p2 +
+          4*p4 +        2*degree_3*p3 +
+          1*neighbor1 + 2*neighbor2;
+    b32 /= (10 + 2*degree_3);
 
 
 
-	// -- Now we need to compute the corner points and we will then be all done.
+    // -- Now we need to compute the corner points and we will then be all done.
 
-	// First we will find all of the far halfedges on the 4 twin quadrilateral faces.
+    // First we will find all of the far halfedges on the 4 twin quadrilateral faces.
 
-	//             v2    v3
-	//       1 --- 4 --- 1  The number represent weights in a normalized mask.
-	//    e5 |     |     |
-	//       4 --\ |x    | <-- Corner point for each of 4 oriantations.
-	//             n^2-- 4 v4  (v1 is on the inside with the n^2)
-	// neig1 4 --/ |     |
-	//       |     |     |
-	// neig2 1 --- 4 --- 1
-	//                e8
-	//
-	// A corner is defined as a sort of centroid of its neighboring vertices.
+    //             v2    v3
+    //       1 --- 4 --- 1  The number represent weights in a normalized mask.
+    //    e5 |     |     |
+    //       4 --\ |x    | <-- Corner point for each of 4 oriantations.
+    //             n^2-- 4 v4  (v1 is on the inside with the n^2)
+    // neig1 4 --/ |     |
+    //       |     |     |
+    // neig2 1 --- 4 --- 1
+    //                e8
+    //
+    // A corner is defined as a sort of centroid of its neighboring vertices.
 
-	// Lets start with the v1 corner point (b00) and then procceed via cyclic
-	// permutations of the code.
+    // Lets start with the v1 corner point (b00) and then procceed via cyclic
+    // permutations of the code.
 
-	addCornerPointNeighborhood(b00, e4);
-	b00 += degree_1*degree_1*p1;
-	b00 /= (degree_1*(5 + degree_1));
+    addCornerPointNeighborhood(b00, e4);
+    b00 += degree_1*degree_1*p1;
+    b00 /= (degree_1*(5 + degree_1));
 
-	// Now lets move on to the v2 corner point (b03);
-	addCornerPointNeighborhood(b03, e1);
-	b03 += degree_2*degree_2*p2;
-	b03 /= (degree_2*(5 + degree_2));
+    // Now lets move on to the v2 corner point (b03);
+    addCornerPointNeighborhood(b03, e1);
+    b03 += degree_2*degree_2*p2;
+    b03 /= (degree_2*(5 + degree_2));
 
-	// Now lets move on to the v3 corner point (b33);
-	addCornerPointNeighborhood(b33, e2);
-	b33 += degree_3*degree_3*p3;
-	b33 /= (degree_3*(5 + degree_3));
+    // Now lets move on to the v3 corner point (b33);
+    addCornerPointNeighborhood(b33, e2);
+    b33 += degree_3*degree_3*p3;
+    b33 /= (degree_3*(5 + degree_3));
 
-	// Now lets move on to the v4 corner point (b30);
-	addCornerPointNeighborhood(b30, e3);
-	b30 += degree_4*degree_4*p4;
-	b30 /= (degree_4*(5 + degree_4));
+    // Now lets move on to the v4 corner point (b30);
+    addCornerPointNeighborhood(b30, e3);
+    b30 += degree_4*degree_4*p4;
+    b30 /= (degree_4*(5 + degree_4));
 
-	// Step 3: Now that we have all of the control points,
-	// we package them up and pass them to the Bicubic Patch drawer.
+    // Step 3: Now that we have all of the control points,
+    // we package them up and pass them to the Bicubic Patch drawer.
 
-	cpts.push_back(b00);
-	cpts.push_back(b01);
-	cpts.push_back(b02);
-	cpts.push_back(b03);
+    cpts.push_back(b00);
+    cpts.push_back(b01);
+    cpts.push_back(b02);
+    cpts.push_back(b03);
 
-	cpts.push_back(b10);
-	cpts.push_back(b11);
-	cpts.push_back(b12);
-	cpts.push_back(b13);
+    cpts.push_back(b10);
+    cpts.push_back(b11);
+    cpts.push_back(b12);
+    cpts.push_back(b13);
 
-	cpts.push_back(b20);
-	cpts.push_back(b21);
-	cpts.push_back(b22);
-	cpts.push_back(b23);
+    cpts.push_back(b20);
+    cpts.push_back(b21);
+    cpts.push_back(b22);
+    cpts.push_back(b23);
 
-	cpts.push_back(b30);
-	cpts.push_back(b31);
-	cpts.push_back(b32);
-	cpts.push_back(b33);
+    cpts.push_back(b30);
+    cpts.push_back(b31);
+    cpts.push_back(b32);
+    cpts.push_back(b33);
   }
 
   void PatchDrawer::addCornerPointNeighborhood(Vector3D & cpt, HalfedgeIter edge)

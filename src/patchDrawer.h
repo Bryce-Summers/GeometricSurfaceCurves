@@ -57,6 +57,8 @@ namespace CMU462
 	 // B30, B31, B32, B33,
 	 //
 	 // Half Edge and u/v coordinate orientation information.
+	 // The input face's canonical half edge cooresponds to upper edge in this
+	 // diagram between u,v coordinates (0, 0) --> (1, 0).
 	 // (0,0) ----> (1,0) (u, v)
 	 //   .           |
 	 //  /|\          |
@@ -66,6 +68,13 @@ namespace CMU462
 	 // (0,1) <---- (1, 1)
 	 // ENSURES: clears the input array of control points.
 	 void computeControlPoints(FaceIter & face,
+				   std::vector<Vector3D> & control_point);
+
+	 // Works the same as the face version, except it orients the control points
+	 // to the given edge, instead of the canonical halfedge for a face.
+	 // ENSURES: clears the input array beforehand.
+	 //          There will be exactly 16 points afterwards.
+	 void computeControlPoints(HalfedgeIter & edge,
 				   std::vector<Vector3D> & control_point);
 	 
 	 // Takes 16 control points and rasterizes a bicubic patch from a set

@@ -21,6 +21,13 @@ using namespace std;
 
 namespace CMU462
 {
+  class Bernstein_3
+  {
+  public:
+    static bool initialised;// Static bool should be initialized to 0 = FALSE.
+    static Polynomial B[4][4];
+    static void init();
+  };
 
   // The definition of Berstein basis functions at namespace level,
   // so that they can be accessed everywhere. Not just in the patch drawer.
@@ -33,6 +40,10 @@ namespace CMU462
   // REQUIRES: derivative >= 0. 0 --> non diferentiated function evaluation.
   
   double Bernstein(double input, int index, int derivative = 0);
+
+  // Returns the polynomial representation, instead of the numeric evaluation
+  // for the given Bernstein polynomial.
+  Polynomial Bernstein_poly(int index, int derivative = 0);
 
   // Evaluates a Bicubic patch based on a standard set of 16 control points.
   // The (0, 0) u,v location is on oriented with the first control poin,
@@ -96,6 +107,19 @@ namespace CMU462
 				   double & du,  // OUT
 				   double & dv); // OUT
 
+  // REQUIRES: x_in specifies the location along the given edge
+  // as a 1 dimensional coordinate from [0, 1],
+  // where 0 cooresponds to the origin point for the edge,
+  // and 1 cooresponds to the destination or ending point for the edge.
+  // returns u and v in the canonical orientation assocated with edge->face();
+  void orient_coordinate_along_edge(HalfedgeIter edge,
+				    double x_in,
+				    double & u,
+				    double & v);
+  
+  // WARNING: These cubic and quadratic roots codes have neither been tested,
+  //          nor used.
+  
   // Finds the 3 roots of the cubic polynomial with the given coeficients.
   // p(x) = ax^3 + bx^2 + cx + d.
   // RETURNS true iff the roots are real only.

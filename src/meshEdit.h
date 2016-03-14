@@ -390,6 +390,7 @@ class MeshEdit : public Renderer {
   // -- Debugging strings.
 
   bool show_control_edges;
+  bool drawPatches;
   
   bool showHUD;
   void drawHUD();

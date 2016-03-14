@@ -186,6 +186,7 @@ namespace CMU462
      int index; // Every critical point is given a unique index between
                 // [0, |critical points|]
      double f_val; // The value of the function at this critical point.
+     bool visited;
    };
    
    /*
@@ -554,6 +555,8 @@ namespace CMU462
          Vector3D newPosition; ///< For Loop subdivision, this will be the position for the edge midpoint
          bool isNew; // Used in Catmull Clark subdivision.
 
+	 vector<Critical_Point *> intersects;
+	 
          EdgeRecord record;
 
       protected:

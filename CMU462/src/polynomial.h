@@ -55,6 +55,11 @@ namespace CMU462
     void removeLeadingTerm();
     void addTrailingTerm(double coef);
     void removeTrailingTerm();
+
+    void addTrailingTerms(double c1);
+    void addTrailingTerms(double c1, double c2);
+    void addTrailingTerms(double c1, double c2, double c3);
+    void addTrailingTerms(double c1, double c2, double c3, double c4);
     
     // REQUIRES: 0 <= power.
     // RETURNS the coeficient if it exists and returns 0.0 if power > degree().
