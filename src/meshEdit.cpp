@@ -1,8 +1,7 @@
 #include "meshEdit.h"
+#include <cmath>
 
 #define PI 3.14159265
-
-#include <cmath>
 
 namespace CMU462 {
 
@@ -889,10 +888,10 @@ namespace CMU462 {
 	GLdouble modelMatrix[16];
 
 	for(int i = 0; i < 16; i++)
-    {
+        {
 	  projMatrix[i]  = 0.0;
 	  modelMatrix[i] = 0.0;
-    }
+        }
 
 	glGetDoublev(GL_PROJECTION_MATRIX, projMatrix);
 	glGetDoublev(GL_MODELVIEW_MATRIX,  modelMatrix);
@@ -903,10 +902,10 @@ namespace CMU462 {
 
 	for(int r = 0; r < 4; r++)
 	for(int c = 0; c < 4; c++)
-    {
+        {
 	  P(r, c) = projMatrix [4*c + r];
 	  M(r, c) = modelMatrix[4*c + r];
-    }
+        }
 
 	Vector4D pos = Vector4D(position);
 	pos.w = 1.0;
@@ -920,7 +919,7 @@ namespace CMU462 {
 
 	// Compute the offset vector in normalized screen space coordinates.
 	Vector4D screen_offset(screen_x_offset*2/screen_w,
-						   -screen_y_offset*2/screen_h, 0.0, 0.0);
+			      -screen_y_offset*2/screen_h, 0.0, 0.0);
 
 	pos += screen_offset;
 
@@ -1576,6 +1575,7 @@ namespace CMU462 {
      curve_tracer.clearData();
      curve_tracer.trace_all_silhouettes(*mesh, eye_direction);
 
+     curve_tracer.export_to_svg(screen_w, screen_h);
    }
  
 

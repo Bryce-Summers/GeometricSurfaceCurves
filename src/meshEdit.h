@@ -16,6 +16,8 @@
 #include "curveTracer.h"
 #include "meshResampler.h"
 
+#include "style.h" // Draw Stylization structure.
+
 #include <string>
 #include <iostream>
 #include <sstream>
@@ -63,17 +65,7 @@ using namespace std;
 
 namespace CMU462 {
 
-  // This structure is used to store a color pallete for this application.
-  struct DrawStyle
-  {
-     Color halfedgeColor;
-     Color vertexColor;
-     Color edgeColor;
-     Color faceColor;
 
-     float strokeWidth;
-     float vertexRadius;
-  };
 
   class MeshNode;
 

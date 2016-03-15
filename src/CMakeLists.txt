@@ -11,7 +11,9 @@ set(COLLADA_VIEWER_SOURCE
     material.cpp
     texture.cpp
     collada.cpp
+    style.cpp
     #critical_points.cpp
+    svg_exporter.cpp
     halfEdgeMesh.cpp
     PatchFunctions.cpp
     pointCurve.cpp
@@ -35,6 +37,8 @@ set(COLLADA_VIEWER_HEADER
     material.h
     texture.h
     collada.h
+    style.h
+    svg_exporter.h
     critical_points.h
     PatchFunctions.h
     halfEdgeMesh.h

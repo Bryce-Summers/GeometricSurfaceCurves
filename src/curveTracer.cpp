@@ -9,6 +9,9 @@
  */
 
 #include "curveTracer.h"
+#include "style.h"
+#include "svg_exporter.h"
+#include <sstream>
 
 namespace CMU462
 {
@@ -82,17 +85,16 @@ namespace CMU462
     double u_original = u;
     double v_original = v;
 
+    // NOTE: every point that is added, needs to also have a tangent added.
     curve.addPoint(P(control_points, u, v));
-
-    movePerpGrad (u, v, current_face, control_points);
+    curve.addTangent(movePerpGrad (u, v, current_face, control_points));
     moveOntoLevel(u, v, current_face, control_points);
 
     while(abs(u - u_original) + abs(v - v_original) > GRAD_PERP_DIST)
     {
       
       curve.addPoint(P(control_points, u, v));
-
-      movePerpGrad (u, v, current_face, control_points);
+      curve.addTangent(movePerpGrad (u, v, current_face, control_points));
       moveOntoLevel(u, v, current_face, control_points);
     }
 
@@ -144,7 +146,7 @@ namespace CMU462
     }
   }
 
-  void Curve_Silhouette::movePerpGrad(double & u, double & v,
+  Vector3D Curve_Silhouette::movePerpGrad(double & u, double & v,
 				      FaceIter & current_face,
 				      std::vector<Vector3D> & control_points)
   {
@@ -155,8 +157,14 @@ namespace CMU462
     
     u += -GRAD_PERP_DIST*grad.y;
     v +=  GRAD_PERP_DIST*grad.x;
-    
+          
     performTransitions(current_face, u, v, control_points);
+
+    // Returns the tangent vector in the direction of the perpendicular
+    // gradient movement.
+    Vector3D world_direction = P(control_points, u, v, 1, 0)*(-grad.y) +
+                             P(control_points, u, v, 1, 0)*( grad.x);
+    return world_direction;
   }
 
   void Curve_Silhouette::find_unique_silhouette_points(int num_critical_points,
@@ -853,9 +861,49 @@ namespace CMU462
   }
 
   // Exports all of the data as paths and points in an svg file.
-  void CurveTracer::export_to_svg()
+  void CurveTracer::export_to_svg(size_t screen_w, size_t screen_h)
   {
-    cout << "IMPLEMENT Export_to_svg in curveTracer.cpp" << endl;
+    
+    cout << "CurveTracer: Exporting SVG file" << endl;
+    
+    SVG_Exporter out;
+
+    SVG_Style style;
+    style.stroke       = "green";
+    style.fill         = "none";
+    style.stroke_width = "5";
+
+    std::stringstream w_string;
+    std::stringstream h_string;
+    w_string << screen_w;
+    h_string << screen_h;
+    
+    out.beginSVG("curve_svg.svg",
+		 w_string.str(), // width.
+		 h_string.str(), // height.
+		 "0 0 " + w_string.str() + " " + h_string.str(),
+		 // Canonical coordinates.
+		 style
+		 );
+
+    out.addTitle("Silhouette Curves.");
+    out.addDescription("This is a cool svg exported from Bryce's curve extraction program!");
+
+    out.loadProjectionMatrix(screen_w, screen_h);
+    
+    out.beginGroup(style);
+
+    // Put all of the curves in the svg.
+    for(auto iter = curves.begin(); iter != curves.end(); ++iter)
+    {
+      out.g_curve(*iter);
+    }
+    
+    out.endGroup();
+    
+    out.endSVG();
+
+    cout << "CurveTracer: Done Exporting SVG" << endl;
   }
 
 }

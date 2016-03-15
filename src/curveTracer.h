@@ -77,7 +77,7 @@ namespace CMU462
     void clearData();
 
     // Exports all of the data as paths and points in an svg file.
-    void export_to_svg();
+    void export_to_svg(size_t width, size_t height);
 
   };
 
@@ -195,9 +195,10 @@ namespace CMU462
 
     // Moves the given tracing states perpendicular to the gradient
     // in a consistent direction, (always lefthand or righthand rule).
-    void movePerpGrad(double & u, double & v,
-		      FaceIter & current_face,
-		      std::vector<Vector3D> & control_points);
+    // Returns the direction moved in.
+    Vector3D movePerpGrad(double & u, double & v,
+			  FaceIter & current_face,
+			  std::vector<Vector3D> & control_points);
 
     // Performs as many transitions as are necessary and updates all of the
     // input values according to the ending location on the geometric surface.
