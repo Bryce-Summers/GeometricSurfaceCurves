@@ -198,7 +198,7 @@ class Quaternion : public Vector4D {
 
 	// Algorithm from http://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToAngle/
 
-	double angle = 2 * acos(q1.w);
+	//double angle = 2 * acos(q1.w);
 
 	// s must be positive, because q1 <= 1, due to normalization.
 	double s = sqrt(1-q1.w*q1.w);
@@ -217,7 +217,7 @@ class Quaternion : public Vector4D {
 	  return Vector3D(q1.x / s, q1.y / s, q1.z / s);
 	}
 
-	// NEVER getsgg HERE.
+	// NEVER gets HERE.
 
   }
 

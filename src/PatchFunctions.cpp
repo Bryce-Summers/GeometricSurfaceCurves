@@ -60,10 +60,10 @@ namespace CMU462
       case 3:
 	switch(index)
 	{
-	  case 0: return -6.0;
-	  case 1: return 18.0;
+	  case 0: return  -6.0;
+	  case 1: return  18.0;
 	  case 2: return -18.0;
-	  case 3: return 6.0;
+	  case 3: return   6.0;
 	}
     }
 
@@ -160,10 +160,12 @@ namespace CMU462
     Bernstein_3::B[3][3].addTrailingTerms(  6);
     
   }
-  
+
+  // RETURNS true iff a transition occured.
   bool transitionIfNeccessary(FaceIter & current_face,
 			      double & u,
-			      double & v)
+			      double & v,
+			      bool & stop)
   {
     /*       0                 0      
      *  .--------->       .---------> 
@@ -244,6 +246,13 @@ namespace CMU462
       return false;
     }
 
+    // Stop if we come to a boundary.
+    if(twin -> isBoundary())
+    {
+      stop = true;
+      return true;
+    }
+    
     o2 = determineOrientation(twin);
     current_face = twin -> face();
    
@@ -302,12 +311,14 @@ namespace CMU462
       Critical_Point * point = *iter;
 
       if( abs(point -> u - u_original) < TOL &&
-	  abs(point -> v - v_original) < TOL)
+          abs(point -> v - v_original) < TOL)
 	{
+	  // Set stop to true if we have already visited this critical point.
+ 	  stop = point -> visited;
 	  point -> visited = true;
+	  break;
 	}
     }
-
     
     return true;
   }
@@ -386,7 +397,8 @@ namespace CMU462
     r3 = c3.Re();
     return out;
   }
-  
+
+  // NOTE: This function is unfinished. FIXME.
   bool findCubicRoots(double a, double b, double c, double d, // IN
 		      Complex & r1,  // OUT
 		      Complex & r2,  // OUT
@@ -409,7 +421,7 @@ namespace CMU462
       // The equation has one real root and two nonreal complex conjugate roots.
     }
 
-    double delta0, delta1, delta2;
+    double delta0, delta1;//, delta2;
     delta0 = b*b - 3*a*c;
     delta1 = 2*b*b*b - 9*a*b*c + 27*a*a*d;
   
@@ -430,7 +442,9 @@ namespace CMU462
     r1 = a_constant*(b + u1*bigC + delta0/(u1*bigC));
     r2 = a_constant*(b + u2*bigC + delta0/(u2*bigC));
     r3 = a_constant*(b + u3*bigC + delta0/(u3*bigC));
-    
+
+    // FIXME, FIXME, FIXME,
+    return false;
   }
 
   bool findQuadraticRoots(double a, double b, double c,

@@ -187,6 +187,12 @@ namespace CMU462
                 // [0, |critical points|]
      double f_val; // The value of the function at this critical point.
      bool visited;
+
+     Critical_Point()
+     {
+       visited = false;
+     }
+     ~Critical_Point(){}
    };
    
    /*
@@ -375,7 +381,10 @@ namespace CMU462
           * initializes the face, possibly setting its boundary flag
           * (by default, a Face does not encode a boundary loop)
           */
-         Face( bool isBoundary = false ) : _isBoundary( isBoundary ) {}
+         Face( bool isBoundary = false ) : _isBoundary( isBoundary )
+         {
+	   critical_point = NULL;
+	 }
 
          /**
           * Returns a reference to some halfedge of this face
@@ -428,8 +437,10 @@ namespace CMU462
 	 Vector3D face_point;
 
 	 // Assumes only 1 critical point per face. // FIXME.
-	 Critical_Point critical_point; // Used when building the morse smale complex.
-	 bool has_critical_point; // TRUE iff this face's critical point is valid.;
+	 // Used when building the morse smale complex.
+	 // NULL --> no critical point;
+	 Critical_Point * critical_point; 
+
 	 // FIXME : put some control points in here, they might be useful, instead of recomputing them at every step.
 
 	   

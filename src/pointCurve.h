@@ -40,9 +40,39 @@ namespace CMU462
 
   public:
 
+    // Stores whether this curve is on the eye facing of the geometry.
+    bool visible = true;
+    bool closed  = false;// Stores whether this curve is closed or not.
+    
+    // Extra information slots that can be used with these curves.
+    Critical_Point * p1;
+    Critical_Point * p2;
+
+    // Not really a critical point,
+    // but the Critical point structure encodes all of
+    // the information that we need to use this point in the future.
+    // The level set crossing point is only guranteed to be close to the level set.
+    Critical_Point * level_set_crossing_point;
+    bool has_crossing_point = false; // Stores whether we actually have a level set crossing point.
+
+        
+
     // -- Constructor.
     PointCurve(){};
     ~PointCurve(){}
+
+    // Copy constructor.
+    PointCurve(const PointCurve &other)
+    {
+      points   = other.points;
+      tangents = other.tangents;
+      visible = other.visible;
+      closed = other.closed;
+      p1 = other.p1;
+      p2 = other.p2;
+      level_set_crossing_point = other.level_set_crossing_point;
+      has_crossing_point = other.has_crossing_point;
+    }
 
     void addPoint(Vector3D p)  { points.push_back(p); }
     void addTangent(Vector3D t){tangents.push_back(t);}
@@ -57,23 +87,7 @@ namespace CMU462
     void export_svg_path(std::ostream& os, Matrix4x4 & Proj,
 			 size_t screen_w, size_t screen_h);
         
-    // Stores whether this curve is on the eye facing of the geometry.
-    bool visible = true;
-    bool closed  = false;// Stores whether this curve is closed or not.
-    
-    // Extra information slots that can be used with these curves.
-    Critical_Point p1;
-    Critical_Point p2;
 
-    // Not really a critical point,
-    // but the Critical point structure encodes all of
-    // the information that we need to use this point in the future.
-    // The level set crossing point is only guranteed to be close to the level set.
-    Critical_Point level_set_crossing_point;
-    bool has_crossing_point = false; // Stores whether we actually have a level set crossing point.
-
-    // Add spline subdivision methods.
-    // Write functionality to convert this into 2D points based on the current Opengl settings.
   };
 
   

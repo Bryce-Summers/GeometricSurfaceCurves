@@ -8,6 +8,8 @@ namespace CMU462 {
   {
     os << " stroke=\"" << s.stroke << "\" fill=\"" << s.fill
        << "\" stroke-width=\"" << s.stroke_width << "\"";
+
+    return os;
   }
 
 

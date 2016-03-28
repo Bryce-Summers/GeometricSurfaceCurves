@@ -26,6 +26,12 @@ namespace CMU462
     {
       glVertex3dv( &(iter -> x) );
     }
+
+    // Close the loop if this is a closed curve.
+    if(points.size() > 0 && closed)
+    {
+      glVertex3dv( &(points.begin() -> x) );
+    }
     
     glEnd();
   }
@@ -75,7 +81,7 @@ namespace CMU462
     if(len < 2)
     {
       cout << "PointCurve: " <<
-	      "PATH's must contain at least  is not long enough." << endl;
+	      "PATH's must contain at least 2 points, it is not long enough." << endl;
       return;
     }
 

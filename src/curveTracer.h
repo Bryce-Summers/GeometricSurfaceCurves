@@ -43,8 +43,8 @@ namespace CMU462
     // ----------------
 
   private:
-    std::vector<Critical_Point> points;
-    std::vector<PointCurve> curves;
+    std::vector<Critical_Point *> points;
+    std::vector<PointCurve*> curves;
 
     PatchDrawer patcher; // Used for computing the control points.
 
@@ -96,7 +96,7 @@ namespace CMU462
     // The critical points will be accurate to within a manhattan metric distance
     // of tolerance*2;
     const double TOLERANCE          = .00000001;
-    const double LEVEL_TOLERANCE = .00001;
+    const double LEVEL_TOLERANCE    = .00001;
     const double CURVE_TRACING_STEP = .000001; // This needs to be larger than the Tolerance.
     // This is the coeficient for tracing along the gradient of the
     // magnitude of the gradient..
@@ -110,8 +110,12 @@ namespace CMU462
     
     // The viewing eye ray.
     Vector3D E;
-    
-    Curve_Silhouette(Vector3D e){this->E = e;};
+
+    // Normal constructor.
+    Curve_Silhouette(Vector3D e)
+    {
+      this->E = e;
+    };
     ~Curve_Silhouette(){}
 
     // returns true iff the eye can see this location.
@@ -124,7 +128,7 @@ namespace CMU462
     // RETURNS: pts_out contains a set of points with useful metadata attached.
     //
     void find_silhouette_points(HalfedgeMesh& mesh,
-				std::vector<Critical_Point> & pts_out);
+				std::vector<Critical_Point *> & pts_out);
     
     // Given a list of silhouette point locations,
     // Creates a Point curve associated with each one of the silhouette points.
@@ -136,8 +140,8 @@ namespace CMU462
     //          -one_patch specifies whether the tracing should span multiple patches
     //           if it is false, then the curve will only be traced until it exits
     //           the patch.
-    void trace_zero_level_sets(std::vector<Critical_Point> & silhouette_points,
-			       std::vector<PointCurve> & edges);
+    void trace_zero_level_sets(std::vector<Critical_Point *> & silhouette_points,
+			       std::vector<PointCurve *> & edges);
  
     // Finds exactly one point on each silhouette curve.
     // num_critical_points -> IN
@@ -149,8 +153,8 @@ namespace CMU462
     //          and contain the locations of origination points.
     void find_unique_silhouette_points(
 			       int num_critical_points,
-			       std::vector<PointCurve> & edges,
-			       std::vector<Critical_Point> & silhouette_points);
+			       std::vector<PointCurve*> & edges,
+			       std::vector<Critical_Point *> & silhouette_points);
     
     // Constructs the Morse Smale Complex
     // critical points and edges will be assumed to be empty.
@@ -159,8 +163,8 @@ namespace CMU462
     // edges  -> OUT All of the morse smale complex lines, represented by
     //               gradient following integral lines.
     void morse_smale_complex(HalfedgeMesh& mesh,
-			     std::vector<Critical_Point> & cp_out,
-			     std::vector<PointCurve> & edges);
+			     std::vector<Critical_Point *> & cp_out,
+			     std::vector<PointCurve *> & edges);
 
     // -- Critical Point finding functionality.
     // Populates the given list with critical points found on the silhouette curve
@@ -168,23 +172,23 @@ namespace CMU462
     // Pass NULL values if you don't want either type of critical point.
     // Populates mesh faces with the location of any critical point located on them.
     void findCriticalPoints (HalfedgeMesh& mesh,
-			     std::vector<Critical_Point> * saddle_points,
-			     std::vector<Critical_Point> * all_points
+			     std::vector<Critical_Point *> * saddle_points,
+			     std::vector<Critical_Point *> * all_points
 			     );
 
     // Finds all critical points.
     void findCriticalPoints(HalfedgeMesh& mesh,
-			    std::vector<Critical_Point> & points)
+			    std::vector<Critical_Point *> & points)
     {
       findCriticalPoints(mesh, NULL, &points);
     }
 
-
+    
   private:
 
     // Returns false if it encounters a boundary.
     // Follows the 0 set perpendicular to the gradient in a loop.
-    bool trace_zero_curve(Critical_Point start, PointCurve & curve);
+    bool trace_zero_curve(Critical_Point * start, PointCurve * curve);
 
     // -- Moves the given tracing states down to the nearest point at the
     //    Desired Level.
@@ -193,17 +197,30 @@ namespace CMU462
 		       std::vector<Vector3D> & control_points,
 		       double level = 0.0);
 
+    // Implementation From Keenan Crane's notes on line search using the
+    // Armijo and Wolfe conditions.
+    // Note: it is possible that we will need to be wary of patch transions in
+    // these calculations.
+    // The candidate location will be returned in the out_location vector.
+    void moveOntoLevel_step(double & u, double & v, // Start.
+			    std::vector<Vector3D> & control_points,
+			    Vector2D dir   // Line search direction.
+			    );
+    
     // Moves the given tracing states perpendicular to the gradient
     // in a consistent direction, (always lefthand or righthand rule).
     // Returns the direction moved in.
+    // the outpute of stop signals whether we should stop curve tracing.
     Vector3D movePerpGrad(double & u, double & v,
 			  FaceIter & current_face,
-			  std::vector<Vector3D> & control_points);
+			  std::vector<Vector3D> & control_points,
+			  bool & stop);
 
     // Performs as many transitions as are necessary and updates all of the
     // input values according to the ending location on the geometric surface.
     // Marks any critical points encountered as visited.
-    void performTransitions(FaceIter & current_face,
+    // RETURNS true iff the routine has come across a previously visited edge.
+    bool performTransitions(FaceIter & current_face,
 			    double & u,
 			    double & v,
 			    std::vector<Vector3D> & control_points);
@@ -217,9 +234,9 @@ namespace CMU462
     // returns false if an ending critical point was not found, for instance in meshes with boundaries.
     // ASSUMPTION: if we choose 2 perpendicular directions, then they will go in opposite gradient directions.
     // REQUIRES: curve should be empty coming in.
-    bool trace_gradient(Critical_Point cp,    // Starting point.
+    bool trace_gradient(Critical_Point * cp,  // Starting point.
 			double du, double dv, // Direction.
-			PointCurve & curve    // OUT: Output point curve that is populated.
+			PointCurve * curve    // OUT: Output point curve that is populated.
 			);
     
     // Follow the gradient of f^2 down to a critical point.
@@ -227,7 +244,7 @@ namespace CMU462
     // otherwise returns false if the search goes out of bounds.
     bool search_for_critical_point(std::vector<Vector3D> & control_points,
 				   double u, double v,
-				   Critical_Point & p);
+				   Critical_Point * p);
 
     // Classifies critical points based on the signs of the leading principle minors,
     // of the hessian.
@@ -248,6 +265,10 @@ namespace CMU462
     // F = N dot E, this defines the silhouette when it equals 0.
     double F(std::vector<Vector3D> & control_points, double u, double v);
 
+    // Returns the square of F.
+    double F_sqr(std::vector<Vector3D> & control_points,
+		 double u, double v);
+    
     // -- 1st order partial derivatives.
     double F_u(std::vector<Vector3D> & control_points, double u, double v);
     double F_v(std::vector<Vector3D> & control_points, double u, double v);
@@ -281,7 +302,7 @@ namespace CMU462
     //    themselves for location equivalence checks.
     //    
     void findRoots_F(EdgeIter edge,
-		     std::vector<Critical_Point> & roots);
+		     std::vector<Critical_Point *> & roots);
       
   };
   

@@ -304,7 +304,7 @@ namespace CMU462
 
   void Polynomial::division(const Polynomial & other,// IN
 			    Polynomial & quotient_out,
-			    Polynomial & remainder_out)//OUT
+			    Polynomial & remainder_out)// OUT
     const
   {
     Polynomial dividend = this -> copy();
@@ -333,7 +333,7 @@ namespace CMU462
 
     // a / b, a is the dividend, b is the divisor.
     // a - b, a is the minuend,  b is the subtrahend.
-    
+
     Polynomial quotient = Polynomial(deg_quotient);
     for(int i = 0; i < deg_quotient; i++)
     {
@@ -408,7 +408,7 @@ namespace CMU462
   
   Polynomial Polynomial::copy() const
   {
-    Polynomial out = Polynomial();
+    Polynomial out;
 
     for(auto iter = data.begin(); iter != data.end(); ++iter)
     {
@@ -477,7 +477,7 @@ namespace CMU462
     {
       return; // No roots in interval.
     }
- 
+
     // Keep a stack of intervals;
     // In this implementation we will push intervals lower, then upper.
     // When popping upper will come out first, then lower.
@@ -572,6 +572,7 @@ namespace CMU462
     while(!p2.isZero())
     {
       Polynomial remainder_3;
+
 
       remainder_3 = -(p1 % p2);
       

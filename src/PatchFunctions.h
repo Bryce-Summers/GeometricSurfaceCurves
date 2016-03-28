@@ -65,14 +65,15 @@ namespace CMU462
   // Checks the given u and v coordinates for being out of the [0, 1) x [0, 1)
   // If they are then it transitions to the correct new face and
   // localizes the u and v value to the new face.
-  // Returns true iff a transition occured.
+  // RETURNS true iff a transition occured.
   // The face iter is updated as necessary.
   // This function works hand and hand with face to patch control point
   // translation function. They need to be consistent.
   // ENSURES: Applies up to 1 transition. This function should be called repeatedly
   // until it no longer provides a valid transition. For instance this function should
   // be called twice when u < 0 and v < 0.
-  bool transitionIfNeccessary(FaceIter & current_face, double & u, double & v);
+  bool transitionIfNeccessary(FaceIter & current_face, double & u, double & v,
+			      bool & stop);
 
   // The input edge is associated with a Face.
   // The face is associated with a canonical and arbitrary starting half edge.

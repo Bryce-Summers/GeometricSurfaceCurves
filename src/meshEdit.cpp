@@ -111,7 +111,7 @@ namespace CMU462 {
       // // Draw the helpful picking messages.
       if (showHUD)
       {
-	drawHUD();
+	//drawHUD();
       }
 
       return;
@@ -266,9 +266,11 @@ namespace CMU462 {
          case 'E':// Toggle displaying control mesh edges or not.
          case 'e':
 	   show_control_edges = !show_control_edges;
+	   break;
          case 'P':
          case 'p':
 	   drawPatches = !drawPatches;
+	   break;
          default:
             break;
       }
@@ -937,10 +939,6 @@ namespace CMU462 {
    // -- Geometric Operations
    void MeshEdit::mesh_up_sample()
    {
-     // REMOVE ME / FIXME
-     return;
-
-
      
       HalfedgeMesh* mesh;
 
@@ -1238,7 +1236,7 @@ namespace CMU462 {
       if(show_control_edges)
 	drawEdges( mesh );
 
-      drawVertices( mesh );
+      drawVertices ( mesh );
       drawHalfedges( mesh );
 
       // -- Computer Elements.
