@@ -18,6 +18,7 @@ set(COLLADA_VIEWER_SOURCE
     PatchFunctions.cpp
     pointCurve.cpp
     meshResampler.cpp
+    bezierPatch.cpp
     patchDrawer.cpp
     curveTracer.cpp
     meshEdit.cpp
@@ -43,6 +44,7 @@ set(COLLADA_VIEWER_HEADER
     PatchFunctions.h
     halfEdgeMesh.h
     pointCurve.h
+    bezierPatch.h
     patchDrawer.h
     curveTracer.h
     meshResampler.h

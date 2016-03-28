@@ -69,10 +69,9 @@ namespace CMU462
   {
     // Compute the canonical control points for the initial face.
     FaceIter current_face = start -> face;
-    std::vector<Vector3D> control_points;
-    patcher.computeControlPoints(current_face, control_points);
+    patch.loadControlPoints(current_face);
 
-    // Compute the a scalar 'dir' that represents whether we wish to go up or down.
+    // Compute a scalar 'dir' that represents whether we wish to go up or down.
     // The gradient will be multiplied by -1 if we wish to head towards a minnimum.
     //Vector2D grad = grad_f(control_points, start.u, start.v);
 
@@ -93,10 +92,10 @@ namespace CMU462
     bool stop = false;
     
     // NOTE: every point that is added, needs to also have a tangent added.
-    Vector3D p0 = P(control_points, u, v);
+    Vector3D p0 = P(patch, u, v);
     curve -> addPoint(p0);
-    curve -> addTangent(movePerpGrad (u, v, current_face, control_points, stop));
-    moveOntoLevel(u, v, current_face, control_points);
+    curve -> addTangent(movePerpGrad (u, v, current_face, patch, stop));
+    moveOntoLevel(u, v, current_face, patch);
 
     int count = 0;
     const int min_count = 10;
@@ -107,18 +106,18 @@ namespace CMU462
       // I would like to use the STOP variables for this.
     {
       count++;
-      Vector3D point = P(control_points, u, v);
+      Vector3D point = P(patch, u, v);
       curve -> addPoint(point);
 
-      Vector3D tangent = movePerpGrad (u, v, current_face, control_points, stop);
+      Vector3D tangent = movePerpGrad (u, v, current_face, patch, stop);
       curve -> addTangent(tangent);
 
-      moveOntoLevel(u, v, current_face, control_points);
+      moveOntoLevel(u, v, current_face, patch);
     }
 
     // Add one last point at the end to elliminate the gap.
-    curve -> addPoint(P(control_points, u, v));
-    Vector3D tangent = movePerpGrad (u, v, current_face, control_points, stop);
+    curve -> addPoint(P(patch, u, v));
+    Vector3D tangent = movePerpGrad (u, v, current_face, patch, stop);
     curve -> addTangent(tangent);
     
     cout << count << endl;
@@ -130,12 +129,12 @@ namespace CMU462
   // CURRENTLY ONLY SUPPORTS MOVING to 0 level.
   void Curve_Silhouette::moveOntoLevel(double & u, double & v,
 				       FaceIter & current_face,
-				       std::vector<Vector3D> & control_points,
+				       BezierPatch & patch,
 				       double level)
   {
     int count = 0;
 
-    double val = abs(F(control_points, u, v));
+    double val = abs(F(patch, u, v));
     double val_old = val + 1.0;
     
     while(count < 1000 && val > LEVEL_TOLERANCE && val < val_old)
@@ -144,16 +143,16 @@ namespace CMU462
       val_old = val;
       
       // Downhill direction line search.
-      Vector2D neg_grad = -grad_f_2(control_points, u, v);
+      Vector2D neg_grad = -grad_f_2(patch, u, v);
 
       moveOntoLevel_step(u, v, // start
-			 control_points, // geometry.
+			 patch, // geometry.
 			 neg_grad // direction
 			 );
 
-      performTransitions(current_face, u, v, control_points);
+      performTransitions(current_face, u, v, patch);
 
-      val = abs(F(control_points, u, v));
+      val = abs(F(patch, u, v));
     }
 
     //cout << "Exit loop." << endl;
@@ -166,7 +165,7 @@ namespace CMU462
   // The candidate location will be returned in the out_location vector.
   void Curve_Silhouette::moveOntoLevel_step(
             double & u, double & v, // Start.
-	    std::vector<Vector3D> & control_points,
+	    BezierPatch & patch,
 	    Vector2D dir // Line search direction.
 			  )
   {
@@ -184,7 +183,7 @@ namespace CMU462
     // The directional derivative in the gradient's direction.
     const double Du_x0 = dir.norm();
     const Vector2D x0 = Vector2D(u, v);
-    const double f_x0 = F_sqr(control_points, x0.x, x0.y);
+    const double f_x0 = F_sqr(patch, x0.x, x0.y);
 
     // Loop until we have found a viable candidate.
     for(int i = 0; i < 100; i++)
@@ -192,7 +191,7 @@ namespace CMU462
       Vector2D x1 = x0 + t*dir;
 
       // Evaluate the objective.
-      double f_x1 = F_sqr(control_points, x1.x, x1.y);
+      double f_x1 = F_sqr(patch, x1.x, x1.y);
 
       // The Armijo condition states that we wish to find a point that
       // strictly decreases the objective.
@@ -207,8 +206,8 @@ namespace CMU462
       // Evaluate the gradient.
       if(Armijo)
       {
-	//dot(grad_f_2(control_points, x1.x, x1.y), dir);
-	Du_x1 = grad_f_2(control_points, x1.x, x1.y).norm();
+	//dot(grad_f_2(patch, x1.x, x1.y), dir);
+	Du_x1 = grad_f_2(patch, x1.x, x1.y).norm();
 	Wolfe = abs(Du_x1) <= c2*abs(Du_x0);
       }
 
@@ -254,7 +253,7 @@ namespace CMU462
        FaceIter & current_face,
        double & u,
        double & v,
-       std::vector<Vector3D> & control_points)
+       BezierPatch & patch)
   {
     bool transition = false;
     
@@ -271,8 +270,7 @@ namespace CMU462
     // FIXME : It might be a good idea to store critical points on bicubic patches.
     if(transition)
     {
-      control_points.clear();
-      patcher.computeControlPoints(current_face, control_points);
+      patch.loadControlPoints(current_face);
     }
     
     return previously_visited_edge;
@@ -280,24 +278,24 @@ namespace CMU462
 
   Vector3D Curve_Silhouette::movePerpGrad(double & u, double & v,
 				      FaceIter & current_face,
-				      std::vector<Vector3D> & control_points,
+				      BezierPatch & patch,
 				      bool & stop
 					  )
   {
 
-    Vector2D grad = grad_f(control_points, u, v);
+    Vector2D grad = grad_f(patch, u, v);
 
     grad = grad.unit();
     
     u += -GRAD_PERP_DIST*grad.y;
     v +=  GRAD_PERP_DIST*grad.x;
           
-    stop = performTransitions(current_face, u, v, control_points);
+    stop = performTransitions(current_face, u, v, patch);
 
     // Returns the tangent vector in the direction of the perpendicular
     // gradient movement.
-    Vector3D world_direction = P(control_points, u, v, 1, 0)*(-grad.y) +
-                               P(control_points, u, v, 1, 0)*( grad.x);
+    Vector3D world_direction = P(patch, u, v, 1, 0)*(-grad.y) +
+                               P(patch, u, v, 1, 0)*( grad.x);
     return world_direction;
   }
 
@@ -413,13 +411,12 @@ namespace CMU462
 
     // Compute the canonical control points for the initial face.
     FaceIter current_face = cp -> face;
-    std::vector<Vector3D> control_points;
-    patcher.computeControlPoints(current_face, control_points);
+    patch.loadControlPoints(current_face);
 
     
     // Compute the a scalar 'dir' that represents whether we wish to go up or down.
     // The gradient will be multiplied by -1 if we wish to head towards a minnimum.
-    Vector2D grad = grad_f(control_points, cp -> u + du, cp -> v + dv);
+    Vector2D grad = grad_f(patch, cp -> u + du, cp -> v + dv);
     double   dot  = grad.x*du + grad.y*dv; // Positive dot product then <du,dv>
     double   dir  = dot > 0 ? 1.0 : -1.0;  // heads uphill.   
 
@@ -437,7 +434,7 @@ namespace CMU462
     double v_new = v + dv;
 
     // Silhouette curve function value
-    double f = F(control_points, u, v);
+    double f = F(patch, u, v);
     // Curve heading in the direction of a Silhouette.
     // aka heading towards 0 level set.
     bool check_crossing = f*dir < 0;
@@ -447,15 +444,15 @@ namespace CMU462
       u = u_new;
       v = v_new;
 
-      Vector3D location = P(control_points, u, v);
+      Vector3D location = P(patch, u, v);
       curve -> addPoint(location);
 
       // --  Handle the logic of switching between bicubic patches.
-      performTransitions(current_face, u, v, control_points);
+      performTransitions(current_face, u, v, patch);
 
       // Add the silhouette crossing point to the curve if found.
       // crossing found if the curve is no longer headed towards the 0 level set.
-      if(check_crossing && F(control_points, u, v)*dir > 0)
+      if(check_crossing && F(patch, u, v)*dir > 0)
       {
 	cout << "Adding a crossing Point" << f << endl;
 	
@@ -477,7 +474,7 @@ namespace CMU462
       }
 
       
-      grad = dir*grad_f(control_points, u, v);
+      grad = dir*grad_f(patch, u, v);
       
       u_new = u + GRAD_COEF*grad.x;
       v_new = v + GRAD_COEF*grad.y;
@@ -505,8 +502,7 @@ namespace CMU462
     
     for(FaceIter f = mesh.facesBegin(); f != mesh.facesEnd(); f++)
     {
-      std::vector<Vector3D> control_points;
-      patcher.computeControlPoints(f, control_points);
+      patch.loadControlPoints(f);
     
       Critical_Point * cp = new Critical_Point();
 
@@ -525,14 +521,14 @@ namespace CMU462
       for(int v = 0; v <= 1; v++)
       {
 	// Find Critical Points..
-	if(search_for_critical_point(control_points, u, v, cp))
+	if(search_for_critical_point(patch, u, v, cp))
 	{
-	  cp -> type = classify_point(control_points, u, v);
+	  cp -> type = classify_point(patch, u, v);
 	  cp -> face = f;// The cp needs to know its face for direct access
 	              // to the HalfEdge Mesh connectivity structure.
 	  cp -> index = index; // Every cp gets a unique index.
 	  index++;
-	  cp -> f_val = F(control_points, u, v); // Store the function evaluation at this point.	  
+	  cp -> f_val = F(patch, u, v); // Store the function evaluation at this point.	  
 	  
 	  // Keep special track of saddle points,
 	  // because we will use them in the building of a morse smale complex.
@@ -569,14 +565,14 @@ namespace CMU462
   // returns true if a critical point was found in [0,1] x [0,1],
   // otherwise returns false if the tracing goes out of bounds.
   bool Curve_Silhouette::search_for_critical_point(
-			      std::vector<Vector3D> & control_points,
+			      BezierPatch & patch,
 			      double u, double v,
 			      Critical_Point * p)
   {
     Vector2D grad;
     do
     {
-      grad = GRAD_SQR_COEF*grad_mag_f(control_points, u, v);
+      grad = GRAD_SQR_COEF*grad_mag_f(patch, u, v);
 
       u -= grad.x;
       v -= grad.y;
@@ -590,19 +586,19 @@ namespace CMU462
     // Populate the found critical point.
     p -> u = u;
     p -> v = v;
-    p -> location = P(control_points, u, v);
+    p -> location = P(patch, u, v);
 
     return true;
   }
 
   Critical_Point_Type Curve_Silhouette::classify_point(
-		      std::vector<Vector3D> & control_points,
+		      BezierPatch & patch,
 		      double u, double v)
   {
     // Compute entires in the 2 by 2 symmetric hessian matrix.
-    double A = F_uu(control_points, u, v);
-    double B = F_uv(control_points, u, v);
-    double D = F_vv(control_points, u, v);
+    double A = F_uu(patch, u, v);
+    double B = F_uv(patch, u, v);
+    double D = F_vv(patch, u, v);
 
     // Compute the coefficients of the characteristic quadratic
     // formula Q for the hessian matrix.
@@ -652,7 +648,7 @@ namespace CMU462
   };
     
   // position on surface.
-  Vector3D Curve_Silhouette::P(std::vector<Vector3D> & control_points,
+  Vector3D Curve_Silhouette::P(BezierPatch & patch,
 			       double u, double v, int partial_u, int partial_v)
   {
     /*
@@ -667,115 +663,116 @@ namespace CMU462
 	return sum;
     */
     // Evaluates a (u,v)th order partial derivative of the patch position.
-    return evaluatePatch(control_points, u, v, partial_u, partial_v);
+    return patch.evaluateGeometryPatch(u, v, partial_u, partial_v);
   }
 
   // Normal vector to surface at point P(u,v);
-  Vector3D Curve_Silhouette::N(std::vector<Vector3D> & control_points,
+  Vector3D Curve_Silhouette::N(BezierPatch & patch,
 			       double u, double v)
   {
-    return cross(P(control_points, u, v, 1, 0), // P_u
-		 P(control_points, u, v, 0, 1));// P_v
+    // FIXME: I should instead use the tangent patch.
+    return cross(P(patch, u, v, 1, 0), // P_u
+		 P(patch, u, v, 0, 1));// P_v
   }
 
   // F = N dot E, this defines the silhouette when it equals 0.
-  double Curve_Silhouette::F(std::vector<Vector3D> & control_points,
+  double Curve_Silhouette::F(BezierPatch & patch,
 			     double u, double v)
   {
-    return dot(N(control_points, u, v), E);
+    return dot(N(patch, u, v), E);
   }
 
   // Returns the square of F.
-  double Curve_Silhouette::F_sqr(std::vector<Vector3D> & control_points,
-			       double u, double v)
+  double Curve_Silhouette::F_sqr(BezierPatch & patch,
+				 double u, double v)
   {
-    double f    = F(control_points, u, v);
+    double f    = F(patch, u, v);
     return 1000*f*f;
   }
 
   // -- 1st order partial derivatives.
-  double Curve_Silhouette::F_u(std::vector<Vector3D> & control_points,
+  double Curve_Silhouette::F_u(BezierPatch & patch,
 			       double u, double v)
   {
-    return dot(E, cross(P(control_points, u, v, 2, 0),
-			P(control_points, u, v, 0, 1)) +
-	          cross(P(control_points, u, v, 1, 0),
-			P(control_points, u, v, 1, 1)));
+    return dot(E, cross(P(patch, u, v, 2, 0),
+			P(patch, u, v, 0, 1)) +
+	          cross(P(patch, u, v, 1, 0),
+			P(patch, u, v, 1, 1)));
   }
   
-  double Curve_Silhouette::F_v(std::vector<Vector3D> & control_points,
+  double Curve_Silhouette::F_v(BezierPatch & patch,
 			       double u, double v)
   {
-    return dot(E, cross(P(control_points, u, v, 1, 1),
-			P(control_points, u, v, 0, 1)) +
-	          cross(P(control_points, u, v, 1, 0),
-			P(control_points, u, v, 0, 2)));
+    return dot(E, cross(P(patch, u, v, 1, 1),
+			P(patch, u, v, 0, 1)) +
+	          cross(P(patch, u, v, 1, 0),
+			P(patch, u, v, 0, 2)));
   }
 
   // -- 2nd order partial derivatives.
-  double Curve_Silhouette::F_uu(std::vector<Vector3D> & control_points,
+  double Curve_Silhouette::F_uu(BezierPatch & patch,
 				double u, double v)
   {
-    return dot(E, cross(P(control_points, u, v, 3, 0),
-			P(control_points, u, v, 0, 1)) +
+    return dot(E, cross(P(patch, u, v, 3, 0),
+			P(patch, u, v, 0, 1)) +
 	       
-	        2*cross(P(control_points, u, v, 2, 0),
-			P(control_points, u, v, 1, 1)) +
+	        2*cross(P(patch, u, v, 2, 0),
+			P(patch, u, v, 1, 1)) +
 
-	          cross(P(control_points, u, v, 1, 0),
-			P(control_points, u, v, 2, 1))
+	          cross(P(patch, u, v, 1, 0),
+			P(patch, u, v, 2, 1))
 	       );
   }    
   
   // Note: F_uv = F_vu, because of 2nd partial calculus.
-  double Curve_Silhouette::F_uv(std::vector<Vector3D> & control_points,
+  double Curve_Silhouette::F_uv(BezierPatch & patch,
 				double u, double v)
   {
-    return dot(E, cross(P(control_points, u, v, 2, 1),
-			P(control_points, u, v, 0, 1)) +
+    return dot(E, cross(P(patch, u, v, 2, 1),
+			P(patch, u, v, 0, 1)) +
 	       
-	          cross(P(control_points, u, v, 2, 0),
-			P(control_points, u, v, 0, 2)) +
+	          cross(P(patch, u, v, 2, 0),
+			P(patch, u, v, 0, 2)) +
 
-	          cross(P(control_points, u, v, 1, 0),
-			P(control_points, u, v, 1, 2))
+	          cross(P(patch, u, v, 1, 0),
+			P(patch, u, v, 1, 2))
 	       );
   }
   
-  double Curve_Silhouette::F_vv(std::vector<Vector3D> & control_points,
+  double Curve_Silhouette::F_vv(BezierPatch & patch,
 				double u, double v)
   {
-    return dot(E, cross(P(control_points, u, v, 1, 2),
-			P(control_points, u, v, 0, 1)) +
+    return dot(E, cross(P(patch, u, v, 1, 2),
+			P(patch, u, v, 0, 1)) +
 	       
-	        2*cross(P(control_points, u, v, 1, 1),
-			P(control_points, u, v, 0, 2)) +
+	        2*cross(P(patch, u, v, 1, 1),
+			P(patch, u, v, 0, 2)) +
 
-	        2*cross(P(control_points, u, v, 1, 0),
-			P(control_points, u, v, 0, 3))
+	        2*cross(P(patch, u, v, 1, 0),
+			P(patch, u, v, 0, 3))
 	       );
   }
 
 
   // Returns the gradient of f at the given uv coordinates.
-  Vector2D Curve_Silhouette::grad_f(std::vector<Vector3D> & control_points,
+  Vector2D Curve_Silhouette::grad_f(BezierPatch & patch,
 				    double u, double v)
   {
     return Vector2D(
-		    F_u(control_points, u, v),
-		    F_v(control_points, u, v)
+		    F_u(patch, u, v),
+		    F_v(patch, u, v)
 		   );
   }
 
   // The gradient of the magnitude of the gradient of f.
-  Vector2D Curve_Silhouette::grad_mag_f(std::vector<Vector3D> & control_points,
+  Vector2D Curve_Silhouette::grad_mag_f(BezierPatch & patch,
 					double u, double v)
   {
-    double f_u  = F_u(control_points, u, v);
-    double f_v  = F_v(control_points, u, v);
-    double f_uu = F_uu(control_points, u, v);
-    double f_uv = F_uv(control_points, u, v);
-    double f_vv = F_vv(control_points, u, v);
+    double f_u  = F_u(patch, u, v);
+    double f_v  = F_v(patch, u, v);
+    double f_uu = F_uu(patch, u, v);
+    double f_uv = F_uv(patch, u, v);
+    double f_vv = F_vv(patch, u, v);
 
     // <
     // d/du (f_u^2 + f_v^2),
@@ -788,12 +785,12 @@ namespace CMU462
 		   );
   }
   
-  Vector2D Curve_Silhouette::grad_f_2(std::vector<Vector3D> & control_points,
+  Vector2D Curve_Silhouette::grad_f_2(BezierPatch & patch,
 				      double u, double v)
   {
-    double f    = F(control_points, u, v);
-    double f_u  = F_u(control_points, u, v);
-    double f_v  = F_v(control_points, u, v);
+    double f    = F(patch, u, v);
+    double f_u  = F_u(patch, u, v);
+    double f_v  = F_v(patch, u, v);
 
     return Vector2D(
 		    2*f*f_u,
@@ -801,11 +798,11 @@ namespace CMU462
 		    );
   }
 
-  bool Curve_Silhouette::visible(std::vector<Vector3D> & control_points,
+  bool Curve_Silhouette::visible(BezierPatch & patch,
 				 double u,
 				 double v)
   {
-    return F(control_points, u, v) > 0;
+    return F(patch, u, v) > 0;
   }
   
   void Curve_Silhouette::findRoots_F(EdgeIter edge,
@@ -830,7 +827,8 @@ namespace CMU462
 
     // Compute the edge oriented control points, NOT CANONICAL.
     std::vector<Vector3D> control_points;
-    patcher.computeControlPoints(half_edge, control_points);
+    patch.loadControlPoints(half_edge);
+    patch.ejectGeometryPatchControlPoints(control_points);
     
     PolynomialVector3D P_u; // Starts at 0.0;
 
@@ -869,7 +867,7 @@ namespace CMU462
       out_points.push_back(out);
       int index = out_points.size() - 1;
 
-      out -> location = P(control_points, root, 0); // Used in point drawing.
+      out -> location = P(patch, root, 0); // Used in point drawing.
       out -> face = half_edge -> face();
       out -> u = u;// These are in canonical patch orientation.
       out -> v = v;
@@ -884,7 +882,6 @@ namespace CMU462
   }
 
   // -- Critical Point and curve drawing functions.
-
   void CurveTracer::drawCriticalPoints()
   {
     //glDisable(GL_DEPTH_TEST);
@@ -965,7 +962,8 @@ namespace CMU462
       dv /= STEPS_PER_PATCH;
       
       // Compute the current local Bicubic Patch.
-      patcher.computeControlPoints(edge->face(), control_points);
+      BezierPatch patch;
+      patch.loadControlPoints(edge -> face());
 
       // Add regularly spaced points on the halfedge defined curve.
       for(int i = 0; i < STEPS_PER_PATCH; i++)
@@ -974,14 +972,14 @@ namespace CMU462
 	v += dv;
 
 	// If visibility has changed, split the curve.
-	if(curve_tracer.visible(control_points, u, v) != visible)
+	if(curve_tracer.visible(patch, u, v) != visible)
 	{
 	  visible = !visible;
 	  curve = new PointCurve();
 	  curve -> visible = visible;
 	}
 	
-	curve -> addPoint(evaluatePatch(control_points, u, v));
+	curve -> addPoint(patch.evaluateGeometryPatch(u, v));
       }
 
       edge = edge -> next();

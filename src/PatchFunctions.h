@@ -18,7 +18,6 @@
 #include "CMU462/CMU462.h" // Standard 462 Vectors, etc.
 
 using namespace std;
-
 namespace CMU462
 {
   class Bernstein_3
@@ -38,8 +37,11 @@ namespace CMU462
   // REQUIRES: input in range [0, 1].
   // REQUIRES: index in range [0, 3].
   // REQUIRES: derivative >= 0. 0 --> non diferentiated function evaluation.
-  
+  // 3rd order (cubic) bernstein polynomials.
   double Bernstein(double input, int index, int derivative = 0);
+
+  // 2nd order (quadratic) bernstein polynomials.
+  double Bernstein_2(double input, int index, int derivative = 0);
 
   // Returns the polynomial representation, instead of the numeric evaluation
   // for the given Bernstein polynomial.

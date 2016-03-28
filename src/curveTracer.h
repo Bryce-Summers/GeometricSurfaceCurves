@@ -15,6 +15,7 @@
 #include "UnionFind/UF_Serial.h"
 
 #include "PatchFunctions.h"
+#include "bezierPatch.h"
 
 /*
  * Contour Tracer,
@@ -87,10 +88,11 @@ namespace CMU462
   // given a specification for the function and its 1st and 2nd order derivatives in u and v.
   class Curve_Silhouette
   {
-    
+
   private:
-    PatchDrawer patcher; // Used for computing the control points.
-    
+    BezierPatch patch;
+    PatchDrawer patchDrawer; // Used for computing the control points.
+
     public:
 
     // The critical points will be accurate to within a manhattan metric distance
@@ -120,7 +122,7 @@ namespace CMU462
 
     // returns true iff the eye can see this location.
     // reduces to a sign check of f.
-    bool visible(std::vector<Vector3D> & control_points, double u, double v);
+    bool visible(BezierPatch & patch, double u, double v);
 
     // Compiles a list of all silhouette points on patch boundaries.
     // GIVEN: A halfedge mesh that specifies the set of patches.
@@ -194,7 +196,7 @@ namespace CMU462
     //    Desired Level.
     void moveOntoLevel(double & u, double & v,
 		       FaceIter & current_face,
-		       std::vector<Vector3D> & control_points,
+		       BezierPatch & patch,
 		       double level = 0.0);
 
     // Implementation From Keenan Crane's notes on line search using the
@@ -203,7 +205,7 @@ namespace CMU462
     // these calculations.
     // The candidate location will be returned in the out_location vector.
     void moveOntoLevel_step(double & u, double & v, // Start.
-			    std::vector<Vector3D> & control_points,
+			    BezierPatch & patch,
 			    Vector2D dir   // Line search direction.
 			    );
     
@@ -213,7 +215,7 @@ namespace CMU462
     // the outpute of stop signals whether we should stop curve tracing.
     Vector3D movePerpGrad(double & u, double & v,
 			  FaceIter & current_face,
-			  std::vector<Vector3D> & control_points,
+			  BezierPatch & patch,
 			  bool & stop);
 
     // Performs as many transitions as are necessary and updates all of the
@@ -223,7 +225,7 @@ namespace CMU462
     bool performTransitions(FaceIter & current_face,
 			    double & u,
 			    double & v,
-			    std::vector<Vector3D> & control_points);
+			    BezierPatch & patch);
 
 
 
@@ -242,53 +244,53 @@ namespace CMU462
     // Follow the gradient of f^2 down to a critical point.
     // returns true if a critical point was found in [0,1] x [0,1],
     // otherwise returns false if the search goes out of bounds.
-    bool search_for_critical_point(std::vector<Vector3D> & control_points,
+    bool search_for_critical_point(BezierPatch & patch,
 				   double u, double v,
 				   Critical_Point * p);
 
     // Classifies critical points based on the signs of the leading principle minors,
     // of the hessian.
-    Critical_Point_Type classify_point(std::vector<Vector3D> & control_points,
+    Critical_Point_Type classify_point(BezierPatch & patch,
 				       double u, double v);
     // -- Function specifications.
     
     // position on surface or a partial derivative in the given combination of
     // u and v partials.
     // P(c,u,v, 0, 0) 
-    Vector3D P(std::vector<Vector3D> & control_points,
+    Vector3D P(BezierPatch & patch,
 	       double u, double v,
 	       int partial_u = 0, int partial_v = 0);
 
     // Normal vector to surface at point P(u,v);
-    Vector3D N(std::vector<Vector3D> & control_points, double u, double v);
+    Vector3D N(BezierPatch & patch, double u, double v);
 
     // F = N dot E, this defines the silhouette when it equals 0.
-    double F(std::vector<Vector3D> & control_points, double u, double v);
+    double F(BezierPatch & patch, double u, double v);
 
     // Returns the square of F.
-    double F_sqr(std::vector<Vector3D> & control_points,
+    double F_sqr(BezierPatch & patch,
 		 double u, double v);
     
     // -- 1st order partial derivatives.
-    double F_u(std::vector<Vector3D> & control_points, double u, double v);
-    double F_v(std::vector<Vector3D> & control_points, double u, double v);
+    double F_u(BezierPatch & patch, double u, double v);
+    double F_v(BezierPatch & patch, double u, double v);
 
     // -- 2nd order partial derivatives.
-    double F_uu(std::vector<Vector3D> & control_points, double u, double v);
+    double F_uu(BezierPatch & patch, double u, double v);
     // Note: F_uv = F_vu, because of 2nd partial calculus.
-    double F_uv(std::vector<Vector3D> & control_points, double u, double v);
-    double F_vv(std::vector<Vector3D> & control_points, double u, double v);
+    double F_uv(BezierPatch & patch, double u, double v);
+    double F_vv(BezierPatch & patch, double u, double v);
 
     // Returns the gradient of f at the given uv coordinates.
-    Vector2D grad_f(std::vector<Vector3D> & control_points, double u, double v);
+    Vector2D grad_f(BezierPatch & patch, double u, double v);
 
     // The gradient of the magnitude of the gradient of F.
     // Using this result as a descent direction should yield all critical points.
-    Vector2D grad_mag_f(std::vector<Vector3D> & control_points,
+    Vector2D grad_mag_f(BezierPatch & patch,
 			double u, double v);
 
     // The gradient of the sqr of f, minnimums coorespond to 0 points.
-    Vector2D grad_f_2(std::vector<Vector3D> & control_points,
+    Vector2D grad_f_2(BezierPatch & patch,
 		      double u, double v);
 
     // Appends all points along the given edge which lie along a silhouette curve.
@@ -303,9 +305,9 @@ namespace CMU462
     //    
     void findRoots_F(EdgeIter edge,
 		     std::vector<Critical_Point *> & roots);
-      
+
   };
-  
+
 }
 
 #endif // CURVE_TRACER_H
