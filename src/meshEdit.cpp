@@ -227,7 +227,7 @@ namespace CMU462 {
 
          case 'u':
          case 'U':
-            mesh_up_sample();
+	   //mesh_up_sample();
             break;
 
          case 'd':

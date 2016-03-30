@@ -663,6 +663,18 @@ namespace CMU462
 	return sum;
     */
     // Evaluates a (u,v)th order partial derivative of the patch position.
+
+    /*
+    if(partial_u >= 1 && partial_v == 0)
+    {
+      return patch.evaluateTangentUPatch(u, v, partial_u - 1, 0);
+    }
+    else if(partial_u == 0 && partial_v >= 1)
+    {
+      return patch.evaluateTangentUPatch(u, v, 0, partial_v - 1);
+    }
+    */
+    
     return patch.evaluateGeometryPatch(u, v, partial_u, partial_v);
   }
 
@@ -671,8 +683,12 @@ namespace CMU462
 			       double u, double v)
   {
     // FIXME: I should instead use the tangent patch.
+
+    //return patch.evaluateNormal(u, v);
+    
     return cross(P(patch, u, v, 1, 0), // P_u
 		 P(patch, u, v, 0, 1));// P_v
+    
   }
 
   // F = N dot E, this defines the silhouette when it equals 0.

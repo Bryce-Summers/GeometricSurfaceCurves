@@ -473,8 +473,8 @@ namespace CMU462
          Vector3D newPosition; ///< For Loop subdivision, this will be the updated position of the vertex
          bool isNew; ///< For Loop subdivision, this flag should be true if and only if this vertex is a new vertex created by subdivision (i.e., if it corresponds to a vertex of the original mesh)
 
-		 // Use to compute the R values in catmull - Clark upsampling.
-		 Vector3D one_neighborhood_midpoint_sum;
+	 // Use to compute the R values in catmull - Clark upsampling.
+	 Vector3D one_neighborhood_midpoint_sum;
 
          /**
           * computes the average of the neighboring vertex positions and stores it in Vertex::centroid

@@ -48,7 +48,7 @@ namespace CMU462
   Polynomial Bernstein_poly(int index, int derivative = 0);
 
   // Evaluates a Bicubic patch based on a standard set of 16 control points.
-  // The (0, 0) u,v location is on oriented with the first control poin,
+  // The (0, 0) u,v location is oriented with the first control point,
   // the collumns vary over u and the rows vary over v.
   //
   // Half Edge and u/v coordinate orientation information.
@@ -59,7 +59,6 @@ namespace CMU462
   //   |          \|/
   //   |     2     .
   // (0,1) <---- (1, 1)
-  //
   Vector3D evaluatePatch(std::vector<Vector3D> & control_points,
 			 double u, double v,
 			 int partial_u = 0, int partial_v = 0);

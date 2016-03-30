@@ -68,7 +68,7 @@ namespace CMU462
     // /|\  /|\  /|\  /|\
     //  |    |    |    |
     // v00, v10, v20, v30
-    std::vector<Vector3D> tangents_v; // 3 by 4
+    std::vector<Vector3D> tangents_v; // 3 by 4 (Row major order.)
     
   public:
     
@@ -89,7 +89,18 @@ namespace CMU462
     //          There will be exactly 16 points afterwards.
     void loadControlPoints(HalfedgeIter & edge);
 
-
+    // Evaluates a Bicubic patch based on a standard set of 16 control points.
+    // The (0, 0) u,v location is oriented with the first control point,
+    // the collumns vary over u and the rows vary over v.
+    //
+    // Half Edge and u/v coordinate orientation information.
+    // (0,0) ----> (1,0) (u, v)
+    //   .     0     |
+    //  /|\          |
+    //   |  3     1  |
+    //   |          \|/
+    //   |     2     .
+    // (0,1) <---- (1, 1)
     // Evaluates the 'push forward' of the geometry patch
     // at the given u, v coordinates.
     // if partial_u and are used
@@ -98,14 +109,58 @@ namespace CMU462
     Vector3D evaluateGeometryPatch(double u, double v,
 				   int partial_u = 0, int partial_v = 0);
 
+    // Note: The partial results in the geometry differentiated by u 1 + partial
+    // since this is a tangent patch.
+    Vector3D evaluateTangentUPatch(double u, double v,
+				   int partial_u = 0, int partial_v = 0);
+
+    // Note: The partial results in the geometry differentiated by u 1 + partial
+    // since this is a tangent patch.
+    Vector3D evaluateTangentVPatch(double u, double v,
+				   int partial_u = 0, int partial_v = 0);
+    
     // Evaluates the 'push forward' of the tangent patches.
-    Vector3D evaluateNormal(double u, double v);
+    // The output vector is normalized.
+    Vector3D evaluateNormal(double u, double v,
+			    int partial_u = 0, int partial_v = 0);
 
     // Copies the geometry patch's contents into the given out vector.
     // This function does not clear the out vector.
     void ejectGeometryPatchControlPoints(std::vector<Vector3D> & out);
 
   private:
+
+    // Populate the input array with the control points associated with the
+    // given half edge.
+    // This function may be used to directly determine the geometry patch and
+    // may also be used for the twin edges needed for the tangent patches.
+    // REQUIRES: The HE mesh is entirely quadrilateral,
+    //        extraordinary vertices are handled correctly.
+    // ENSURES: the given array is cleared internally and will only contain the 16 relevant points in row major order.
+    // Evaluates a Bicubic patch based on a standard set of 16 control points.
+    // The (0, 0) u,v location is oriented with the first control point,
+    // the collumns vary over u and the rows vary over v.
+    //
+    // Half Edge and u/v coordinate orientation information.
+    // B00   edge.
+    // (0,0) ----> (1,0) (u, v)
+    //   .     0     |
+    //  /|\          |
+    //   |  3     1  |
+    //   |          \|/
+    //   |     2     .
+    // (0,1) <---- (1, 1)
+    void computeGeometryControlPoints(HalfedgeIter & edge,
+				      std::vector<Vector3D> &cpts);
+
+    // populates the given tangent patch with appropiate control vectors.
+    // Because of symmetry, this function merely populates the Dv (3 by 4) patch.
+    // If you desire to populate the Du patch, call this function on the next
+    // halfedge and then transpose the output.
+    // ASSUMPTION: all faces should be quadrilaterals.
+    void computeTangentControlPoints(HalfedgeIter & edge,
+				     std::vector<Vector3D> &cpts,
+				     bool transpose);
 
     // -- These are some helper function used in the computation of control
     //    point positions.
@@ -119,6 +174,10 @@ namespace CMU462
 					  Vector3D & v2);
 
     void addCornerPointNeighborhood(Vector3D & cpt, HalfedgeIter h0);
+
+
+    // Tangent helper functions.
+    Vector3D computeCornerTangentPoint(HalfedgeIter & up_half_edge);
   };
 }
 
