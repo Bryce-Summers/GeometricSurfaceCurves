@@ -49,22 +49,22 @@ namespace CMU462
 	  // FIXME: directly evaluate the normal form the patch.
 	  Vector3D normal = cross(p2 - p1, p1 - p4).unit();
 	  // Per Polygon normal.
-	  //glNormal3dv( &normal.x );
+	  glNormal3dv( &normal.x );
 	  //glNormal3dv( &n1.x );
 
 	  // Draw a quadrilateral.
 	  glBegin(GL_POLYGON);
 
-	  glNormal3dv( &n1.x);
+	  //glNormal3dv( &n1.x);
 	  glVertex3dv( &p1.x );
 
-	  glNormal3dv( &n2.x);
+	  //	  glNormal3dv( &n2.x);
 	  glVertex3dv( &p2.x );
 
-	  glNormal3dv( &n3.x);
+	  //	  glNormal3dv( &n3.x);
 	  glVertex3dv( &p3.x );
 
-	  glNormal3dv( &n4.x);
+	  //	  glNormal3dv( &n4.x);
 	  glVertex3dv( &p4.x );
 
 	  glEnd();
