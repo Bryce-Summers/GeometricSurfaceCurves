@@ -43,9 +43,15 @@ namespace CMU462
 	  */
 	 void drawCatmullClarkQuadPatch(FaceIter & face);
 
+	 void drawTangentPatches(FaceIter & face);
+	 
 	 // Takes 16 control points and rasterizes a bicubic patch from a set
 	 // of evenly spaced quadrilaterals.
 	 void drawBicubicPatch(BezierPatch & patch);
+
+	 // Draws lines from the geometry control points in the direction
+	 // of the u and v tangent vectors at those points.
+	 void drawUVTangents(BezierPatch & patch);
 
 	 // Simply draws the face as a polygon.
 	 // This is equivilant to drawing the control mesh.

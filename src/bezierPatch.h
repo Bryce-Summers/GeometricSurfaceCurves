@@ -39,6 +39,7 @@ namespace CMU462
     // Half Edge and u/v coordinate orientation information.
     // The input face's canonical half edge cooresponds to upper edge in this
     // diagram between u,v coordinates (0, 0) --> (1, 0).
+    //       edge.
     // (0,0) ----> (1,0) (u, v)
     //   .           |
     //  /|\          |

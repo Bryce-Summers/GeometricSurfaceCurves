@@ -20,7 +20,7 @@ namespace CMU462
 
   void BezierPatch::loadControlPoints(HalfedgeIter & edge)
   {
-    // Compute the geompetry position patch.
+    // Compute the geometry position patch.
     computeGeometryControlPoints(edge, geometry);
 
     // As in the Loop-Shaffer paper, the orientation for ev should be
@@ -36,10 +36,10 @@ namespace CMU462
     HalfedgeIter ev = edge;
     HalfedgeIter eu = edge -> next() -> next() -> next();
     
-    // Compute the partial u tangent field patch.
+    // Compute the partial v tangent field patch.
     computeTangentControlPoints(ev, tangents_v, false);
 
-    // Compute the partial v tangent field patch.
+    // Compute the partial u tangent field patch.
     computeTangentControlPoints(eu, tangents_u, true);
   }
 
@@ -95,7 +95,7 @@ namespace CMU462
     HalfedgeIter e1 = e0 -> next();
     HalfedgeIter e2 = e1 -> next();
     HalfedgeIter e3 = e2 -> next();
-    
+
     // Because of symmetry we will assume that cpts is the partial_v patch.
 
     // -- Let us list out the 12 control points that we wish to compute.
@@ -110,36 +110,40 @@ namespace CMU462
     V21 = v(2, 1, g);
     V31 = v(3, 1, g);
 
-    // I am assuming that we want the input points to point straight up,
-    // instead of right. (+v, instead of +u).
+    V02 = v(0, 2, g);
+    V12 = v(1, 2, g);
+    V22 = v(2, 2, g);
+    V32 = v(3, 2, g);
+
+    V00 = v(0, 0, g);
+    V10 = v(1, 0, g);
+    V20 = v(2, 0, g);
+    V30 = v(3, 0, g);
+
+    /**********************
+     *   V02  e2    V32
+     *    +<---------+
+     *    |          .        .
+     *    |         /|\      /|\
+     *e3  |          |  e1    |  up.
+     *   \|/         |        |
+     *    .          |
+     *    +--------->+
+     *   V00  e0    V30
+     *********************/
+
+    // -- Compute better corner tangent points using the directional derivative
+    // in the up direction as in the picture.
+
     
-    /*
-    V30 = computeCornerTangentPoint(e1);
-    V32 = computeCornerTangentPoint(e2 -> twin() -> next());
-    V02 = computeCornerTangentPoint(e2 -> twin() -> next() -> next()
-				                 -> next() -> twin());
-    V00 = computeCornerTangentPoint(e3 -> twin());
-    */
-
-    V30 = computeCornerTangentPoint(e1);
-    V32 = computeCornerTangentPoint(e2);
-    V02 = computeCornerTangentPoint(e3);
-    V00 = computeCornerTangentPoint(e0);
-
-    // Right facing, like in the paper.
-    /*
-    V30 = computeCornerTangentPoint(e1 -> twin() -> next());
-    V32 = computeCornerTangentPoint(e2 -> twin() -> next() ->
-				    twin() -> next());
-    V02 = computeCornerTangentPoint(e2 -> twin());
-    V00 = computeCornerTangentPoint(e0);
-    */
-
-    /*
-    V02 *= -1;
-    V30 *= -1;
-    */
+    V30 =  computeCornerTangentPoint(e1);
+    V32 = -computeCornerTangentPoint(e1 -> twin());
+    V02 = -computeCornerTangentPoint(e3 -> twin());
+    V00 =  computeCornerTangentPoint(e3 -> twin());
     
+    
+
+
 
     // The paper says that I need to flip two of these corner points,
     // but I think that I have properly oriented them.
@@ -175,7 +179,9 @@ namespace CMU462
      *    +--------->+
      *   V00  e0    V30
      *********************/
-    
+
+
+    /*    
     V10 = 1.0/3*(2*c00*u(1, 0, g) - c01*u(0,0, g)) +
           3*(b(1, 1, g) - b(1, 0, g));
     V20 = 1.0/3*(  c00*u(2, 0, g) - 2*c01*u(1,0, g)) +
@@ -184,9 +190,10 @@ namespace CMU462
     // V12 and V22 are implemented in an analagous way.
     V12 = 1.0/3*(2*c10*u(1, 3, g) -   c11*u(0,3, g)) + 3*(b(1, 3, g) - b(1, 2, g));
     V22 = 1.0/3*(  c10*u(2, 3, g) - 2*c11*u(1,3, g)) + 3*(b(2, 3, g) - b(2, 2, g));
-
-    // Use default geometry patch tangent patches, but they are not continuous.
+    */
     
+    // Use default geometry patch tangent patches, but they are not continuous.
+    /*
     V00 = v(0, 0, g);
     V01 = v(0, 1, g);
     V02 = v(0, 2, g);
@@ -199,11 +206,10 @@ namespace CMU462
     V30 = v(3, 0, g);
     V31 = v(3, 1, g);
     V32 = v(3, 2, g);
-    
+    */    
 
     if(!transpose)
     {
-      // -- Let us list out the 12 control points that we wish to compute.
       // V02, V12, V22, V32;
       // V01, V11, V21, V31;
       // V00, V10, V20, V30;
@@ -256,7 +262,6 @@ namespace CMU462
   // Returns the Tangent Control point associated with corner point at the beginning
   // of the given half edge, where the half edge should be pointing in the positive
   // v direction.
-  // NOTE: if something is wrong, try rotating the input edge which is used.
   Vector3D BezierPatch::computeCornerTangentPoint(HalfedgeIter & up_half_edge)
   {
     int n = up_half_edge -> vertex() -> degree();
@@ -307,7 +312,6 @@ namespace CMU462
    *    We will need to deduce relevant vertices in the one neighborhood of
    *    the face on the fly to account for potential extraordinary
    *    vertices of degree != 4.
-   *    one neighborhood of the face.
    *
    * 2. Compute the 16 bicubic patch control points.
    *    - 3 types: 4 interior points, 8 edge points, and 4 corner points.
@@ -450,11 +454,9 @@ namespace CMU462
     b32 /= (10 + 2*degree_3);
 
 
-
     // -- Now we need to compute the corner points and we will then be all done.
 
     // First we will find all of the far halfedges on the 4 twin quadrilateral faces.
-
     //             v2    v3
     //       1 --- 4 --- 1  The number represent weights in a normalized mask.
     //    e5 |     |     |
@@ -564,7 +566,7 @@ namespace CMU462
   {
     Vector3D du = evaluateTangentUPatch(u, v, 0, 0);
     Vector3D dv = evaluateTangentVPatch(u, v, 0, 0);
-
+       
     // Cross the two partials to get the normal.
     return cross(du, dv).unit();
   }

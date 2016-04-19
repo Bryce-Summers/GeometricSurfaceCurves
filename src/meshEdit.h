@@ -270,6 +270,7 @@ class MeshEdit : public Renderer {
   // Rendering functions.
   void renderMesh   ( HalfedgeMesh& mesh );
   void drawFaces    ( HalfedgeMesh& mesh );
+  void drawTangents ( HalfedgeMesh& mesh );
   void drawEdges    ( HalfedgeMesh& mesh );
   void drawVertices ( HalfedgeMesh& mesh );
   void drawHalfedges( HalfedgeMesh& mesh );
@@ -383,6 +384,7 @@ class MeshEdit : public Renderer {
 
   bool show_control_edges;
   bool drawPatches;
+  bool drawTangentValues;
   
   bool showHUD;
   void drawHUD();

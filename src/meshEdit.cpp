@@ -28,6 +28,7 @@ namespace CMU462 {
       showHUD = true;
       show_control_edges = true;
       drawPatches = false;
+      drawTangentValues = false;
       camera_angles = Vector3D(0.0, 0.0, 0.0);
 
       // 3D applications really like enabling the depth test,
@@ -48,8 +49,8 @@ namespace CMU462 {
       // so we make that component significant.
       GLfloat light_position[] = {.2, 0.5, 1.0, 0.0};
       /* Enable a single OpenGL light. */
-      glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
-      glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
+      glLightfv(GL_LIGHT0, GL_DIFFUSE,  light_diffuse);
+      glLightfv(GL_LIGHT0, GL_AMBIENT,  light_ambient);
       glLightfv(GL_LIGHT0, GL_POSITION, light_position);
       glEnable(GL_LIGHT0);
       light_num++; // increment the number of lights currently turned on
@@ -66,7 +67,6 @@ namespace CMU462 {
       glHint( GL_LINE_SMOOTH_HINT, GL_NICEST );
       glHint( GL_POLYGON_SMOOTH_HINT, GL_NICEST );
       glHint(GL_POINT_SMOOTH_HINT,GL_NICEST);
-
 
 
       // Initialize styles (colors, line widths, etc.) that will be used
@@ -161,7 +161,7 @@ namespace CMU462 {
             cx = v_x + view_distance*eye_direction.x;
             cy = v_y + view_distance*eye_direction.y;
 	    cz = v_z + view_distance*eye_direction.z;
-	
+
             break;
          default:
             cout << "Non Z_UP not supported yet ;(";
@@ -174,8 +174,6 @@ namespace CMU462 {
                  up_x, up_y, up_z);// up direction.
 
       //      eye_direction.normalize();
-      
-
    }
 
    void MeshEdit::draw_meshes()
@@ -261,7 +259,8 @@ namespace CMU462 {
             break;
          case 't':
          case 'T':
-            selectTwinHalfedge();
+	    drawTangentValues = !drawTangentValues;
+            // selectTwinHalfedge();
             break;
          case 'E':// Toggle displaying control mesh edges or not.
          case 'e':
@@ -1230,6 +1229,11 @@ namespace CMU462 {
 	drawFaces( mesh );
       }
 
+      if(drawTangentValues)
+      {
+	drawTangents( mesh);
+      }
+
       // Edges are drawn with flat shading.
       glDisable(GL_LIGHTING);
 
@@ -1269,7 +1273,7 @@ namespace CMU462 {
       cerr << "Warning: draw style not defined for current mesh element!" << endl;
    }
 
-   void MeshEdit::drawFaces( HalfedgeMesh& mesh )
+  void MeshEdit::drawFaces( HalfedgeMesh& mesh)
    {
 
       PatchDrawer patch_drawer;
@@ -1286,15 +1290,32 @@ namespace CMU462 {
          // Coloring.
          setElementStyle( elementAddress( f ) );
 
-		 // Draw the Catmull-Clark control mesh using bicubic patch
-		 // approximations.
-		 patch_drawer.drawCatmullClarkQuadPatch(f);
-
-		 // Draw just the polygons.
-		 //patch_drawer.drawControlFace(f);
+	 // Draw the Catmull-Clark control mesh using bicubic patch
+	 // approximations.
+	 patch_drawer.drawCatmullClarkQuadPatch(f);
+	 
+	 // Draw just the polygons.
+	 //patch_drawer.drawControlFace(f);
 
       }// End of per polygon loop.
+   }
 
+    void MeshEdit::drawTangents(HalfedgeMesh& mesh)
+    {
+
+      PatchDrawer patch_drawer;
+
+      for( FaceIter f = mesh.facesBegin(); f != mesh.facesEnd(); f++ )
+      {
+
+         // Color the Tangent edge the edge color.
+	 setColor( defaultStyle.edgeColor );
+
+	 // Draw the Catmull-Clark control mesh using bicubic patch
+	 // approximations.
+	 patch_drawer.drawTangentPatches(f);
+
+      }// End of per polygon loop.
    }
 
    void MeshEdit::drawEdges( HalfedgeMesh& mesh )
